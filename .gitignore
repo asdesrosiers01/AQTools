@@ -1,0 +1,17 @@
+# Cached downloads and generated outputs from R/station_selection_audit.R.
+# These are large, environment-specific, and fully reproducible from the
+# script plus the source URLs recorded in data/processed/README.md, so
+# they are not committed.
+data/raw/*
+data/processed/*
+outputs/*
+
+# Keep the directories themselves under version control.
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!outputs/.gitkeep
+
+# R session artifacts
+.Rhistory
+.RData
+.Rproj.user/
