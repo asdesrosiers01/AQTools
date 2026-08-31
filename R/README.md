@@ -49,21 +49,25 @@ source.
 ## Testing done on this copy of the script
 
 This repo's execution environment has no CRAN access and no network route
-to `ncei.noaa.gov`, so `elevatr`, `rnaturalearth`, `leaflet`, and
-`htmlwidgets` could not be installed, and the real download/geometry
-sources could not be reached. What *was* possible: installing `sf`,
-`terra`, `geosphere`, and the rest via `apt install r-cran-*`, and running
-Steps 1, 2, 4, 5, and 6 unmodified against the synthetic fixtures in
-`data/raw/test_fixtures/`, with Step 3's three network calls swapped for
-small synthetic sf/terra objects (everything else in Step 3 -- the CRS
-transforms, buffering, distance and relief extraction -- ran as-is). That
-run caught and fixed two real bugs (a PROJ-network-grid failure mode that
-silently corrupted geometry, and a `glue()` indentation bug in the README
-template) -- see `data/raw/test_fixtures/TEST_HARNESS_NOTES.md` for the
-full account of what was and was not exercised.
+to `ncei.noaa.gov` or Natural Earth's download host (`naciscdn.org`), but
+`sf`, `terra`, `geosphere`, `elevatr`, `rnaturalearth`, `leaflet`, and
+`htmlwidgets` were all installed anyway (apt for the ones packaged for
+Ubuntu, `R CMD INSTALL` from CRAN's read-only GitHub mirrors for the
+rest), and AWS's terrain-tile host that `elevatr` uses turned out to be
+reachable. That made it possible to run the real script **unmodified**
+through all 7 steps against the synthetic fixtures in
+`data/raw/test_fixtures/`, with only the two `rnaturalearth::ne_download()`
+call bodies (still blocked) swapped for small synthetic sf objects --
+Step 3's DEM fetch, every CRS transform, buffer, distance, and relief
+calculation, and the leaflet map are all the real, unmodified code
+running against real data. That run caught and fixed three real bugs: a
+PROJ-network-grid failure mode that silently corrupted geometry, a
+`glue()` indentation bug in the README template, and an S2-spherical-
+geometry bug that was silently clipping real coastline out of the crop
+step across the Gulf Coast and Florida (not sandbox-specific -- this one
+would have hit a real run too). Full account, including what still
+isn't exercised, in `data/raw/test_fixtures/TEST_HARNESS_NOTES.md`.
 
-Not tested: the real `rnaturalearth`/`elevatr` calls themselves, Step 7
-(leaflet), and anything at the real 2,061-station scale. Run it once on
-your data and report back any errors -- given the above, they are more
-likely to be a stale download URL or a column-name mismatch than a logic
-problem.
+Run it once on your data and report back any errors -- given the above,
+they are more likely to be a stale download URL or a column-name mismatch
+than a logic problem.

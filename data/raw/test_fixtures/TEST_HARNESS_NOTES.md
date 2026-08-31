@@ -18,32 +18,54 @@ SYNTHETIC; do not use this output for any real AERMET analysis.
 - `igra2-station-list_sample.txt` -- a handful of RAOB stations in the
   real fixed-width IGRA v2 layout, including one deliberately inactive
   station (lstyear < raob_active_since) to confirm it gets filtered out.
+- `example_station_map.html` -- the real Step 7 leaflet map from a full
+  end-to-end run against these fixtures (real DEM, synthetic coastline/
+  rivers). Kept as a concrete example of the map output; open it directly
+  in a browser.
 
 ## What actually got tested, and how
 
-This repo's execution environment has no CRAN access, so `elevatr`,
-`rnaturalearth`, `leaflet`, and `htmlwidgets` could not be installed.
-`sf`, `terra`, `geosphere`, and the rest were installed via
-`apt install r-cran-*`, which was enough to run the real script's Steps
-1, 2, 4, 5, and 6 unmodified against these fixtures, and Step 3 with
-its three network calls (`rnaturalearth::ne_download` x2, and
-`elevatr::get_elev_raster`) swapped for small synthetic sf/terra
-objects built from approximate real coordinates -- everything else in
-Step 3 (the CRS transforms, `st_buffer`, `st_distance`,
-`terra::extract`) ran as-is. Step 7 (leaflet) could not be exercised at
-all here.
+This repo's execution environment has no CRAN access, so the first pass
+installed `sf`, `terra`, `geosphere`, and the rest via `apt install
+r-cran-*` and stood in for `elevatr`/`rnaturalearth`/`leaflet`/
+`htmlwidgets` (not apt-packaged). A second pass found those four are
+each on CRAN's read-only GitHub mirror (`github.com/cran/<pkg>`), which
+this environment *can* reach, and built them from source with `R CMD
+INSTALL` (pulling in their own dependencies the same way). With all
+packages genuinely installed, two of the three blocked hosts turned out
+to still be reachable:
 
-The run produced a real `station_audit_table.csv` and `README.md` from
-the fixtures above, with sensible results: Denver picked up both the
-mountain and river mechanisms from a synthetic elevation bump placed at
-its real coordinates, Akron CO and Tallahassee FL correctly tested as
-simple, the coastal picks (JFK, MIA, DCA) correctly triggered on a
-synthetic coastline, the deliberately-bogus crosswalk row landed in
-`unmatched_crosswalk_stations.csv`, and DC's single-station case
-correctly produced the same station for both terrain classes with
-`below_simple_threshold_flag` set.
+- `naturalearth`'s download host (`naciscdn.org`) -- blocked. Steps 3a/3b
+  still stand in `rnaturalearth::ne_download()`'s three calls with small
+  synthetic sf objects built from approximate real coordinates.
+- `elevatr`'s AWS terrain-tile host (S3) -- **reachable**. Step 3c ran
+  for real: a genuine CONUS DEM at `dem_z = 7` was fetched, mosaicked,
+  and reprojected (elevatr + terra doing the real network I/O, ~3
+  minutes for the full CONUS extent, cached afterward same as a real run).
+- `ncei.noaa.gov` (MSHR, IGRA) -- still blocked; those two stay
+  fixture-fed as before.
 
-## Two real bugs this caught, now fixed in the deployed script
+So this run exercised the real script unmodified end to end, Steps 1
+through 7 (leaflet map included), with only the two `ne_download()` call
+bodies swapped for synthetic data -- everything else, including a real
+elevation raster, is the actual deployed code path.
+
+Results were sensible and, with a real DEM in the loop, more instructive
+than the first pass's synthetic bump: Denver's *airport* sits out on the
+plains east of the actual Front Range, so at the coarse `dem_z = 7`
+resolution its relief comes in under the mountain threshold and it
+qualifies as CO's complex pick only via the river mechanism -- a
+concrete, real-world illustration of the "coarse DEM understates
+narrow-valley relief" limitation the script's own README documents, not
+a bug. Miami legitimately won FL's *simple* pick over Tallahassee
+because its real background relief happens to be lower, even though
+Miami is coastal -- exactly the case `below_simple_threshold_flag` and
+the `selection_reason` NOTE exist to flag, and both fired correctly.
+DC's single-station edge case, the WBAN/WMO-only join tiers, and the
+deliberately-bogus unmatched row all behaved as designed (see the first
+pass's notes below).
+
+## Three real bugs this caught, now fixed in the deployed script
 
 1. **PROJ network grids silently corrupting geometry.** With both `sf`
    and `terra` loaded, `st_transform()` reached for higher-accuracy
@@ -63,13 +85,29 @@ correctly produced the same station for both terrain classes with
    were written with a two-space indent, but `glue::glue()` trims
    common leading whitespace by default, flattening them into
    top-level bullets. Fixed with `.trim = FALSE` on that call.
+3. **S2 spherical geometry silently clipping the coastline crop, real
+   bug, not sandbox-specific.** sf's default S2 engine treats a lon/lat
+   bounding box's edges as geodesic arcs, not flat lines. For
+   `conus_bbox` (a wide box reaching down to 24N), that bulges the
+   bottom edge north by close to 2.5 degrees at its midpoint --
+   confirmed here with a direct `st_crop()`/`st_intersection()` test:
+   real coastline south of about 26.5N was silently dropped, well north
+   of the box's stated `ymin = 24`, cutting straight through the Gulf
+   Coast and Florida. This is a correctness bug independent of the
+   sandbox's blocked hosts -- it would have hit a real run against the
+   real Natural Earth coastline too, silently mis-scoring every station
+   near the Gulf as non-coastal. Fixed with `sf::sf_use_s2(FALSE)` next
+   to the PROJ fix: every geometry in this script is planar by the time
+   it matters (everything is `st_transform()`'d to EPSG:5070 before any
+   distance, buffer, or union), so there is no correctness cost to using
+   planar semantics throughout, and it makes `st_crop()` behave like the
+   flat rectangle its bbox argument implies.
 
 ## What was not exercised
 
-- The real `rnaturalearth::ne_download()` and `elevatr::get_elev_raster()`
-  calls, and their retry/cache behavior -- only their *outputs* were
-  stood in for.
-- Step 7 (the leaflet map).
+- The real `rnaturalearth::ne_download()` calls specifically (host
+  blocked here) -- only their *outputs* were stood in for. `elevatr`
+  was exercised for real.
 - Anything at the real 2,061-station scale (performance, memory, edge
   cases only a large real crosswalk would surface).
 

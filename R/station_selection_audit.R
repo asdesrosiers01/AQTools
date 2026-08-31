@@ -76,6 +76,19 @@ suppressPackageStartupMessages({
 # against the 5-10 km terrain thresholds this script uses.
 sf::sf_proj_network(FALSE)
 
+# sf's default S2 (spherical) geometry engine treats the "straight" edges
+# of a lon/lat bounding box as geodesic arcs, not flat lines. For a wide,
+# low-latitude box like conus_bbox, that bulges the bottom edge several
+# degrees north in the middle -- confirmed here to silently clip real
+# coastline south of about 26.5N out of the Step 3a/3b st_crop() calls,
+# well north of the true ymin and squarely through the Gulf Coast and
+# Florida. Every geometry in this script is planar by the time it matters
+# (everything gets st_transform()'d to EPSG:5070 before any distance,
+# buffer, or union), so there is no correctness cost to using planar
+# (GEOS) semantics throughout instead, and it makes st_crop() behave like
+# the flat rectangle its bbox argument implies.
+sf::sf_use_s2(FALSE)
+
 # ---------------------------------------------------------------------
 # PARAMETERS -- edit these, nothing else below should need to change
 # ---------------------------------------------------------------------
