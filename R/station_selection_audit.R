@@ -89,6 +89,17 @@ sf::sf_proj_network(FALSE)
 # the flat rectangle its bbox argument implies.
 sf::sf_use_s2(FALSE)
 
+# Some federal download endpoints (HOMR's included -- observed here
+# returning a 200 OK with a ~150-line, 1-column page instead of the real
+# file) serve an interstitial/error page instead of the requested file
+# for a request that does not look like it came from a browser. Setting
+# a standard browser user-agent for every download.file() call in this
+# script is a cheap, harmless way to reduce the odds of that.
+options(HTTPUserAgent = paste(
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+))
+
 # ---------------------------------------------------------------------
 # PARAMETERS -- edit these, nothing else below should need to change
 # ---------------------------------------------------------------------
@@ -268,13 +279,33 @@ get_last_modified <- function(url) {
 
 # Download a URL to a cached local file, retrying with exponential
 # backoff. Skips the download entirely if the destination already
-# exists (that is the cache). Stops with a clear message if every
-# retry fails -- callers should not proceed on a missing/partial file.
+# exists AND passes `validate` (that is the cache). Stops with a clear
+# message if every retry fails -- callers should not proceed on a
+# missing/partial/wrong file.
+#
+# `validate`, if given, is a function(path) -> logical checking that the
+# downloaded content actually looks like what it is supposed to be, not
+# just that *a* file landed. This matters because some servers (HOMR's
+# file endpoint, observed here) return an HTTP 200 with an unrelated
+# interstitial or error page instead of the real file for a request that
+# doesn't look like it came from a browser -- no HTTP error at all, just
+# wrong content, so a plain "did the download succeed" check misses it
+# entirely. A pre-existing cached file is re-validated too and
+# re-downloaded if it fails, so a bad file from an earlier run does not
+# get trusted just because it exists at the expected path.
 cache_download <- function(url, dest, max_retries = download_max_retries,
-                           base_wait = download_base_wait_s) {
+                           base_wait = download_base_wait_s, validate = NULL) {
+  content_ok <- function(path) {
+    file.exists(path) && file.info(path)$size > 0 && (is.null(validate) || isTRUE(validate(path)))
+  }
   if (file.exists(dest) && file.info(dest)$size > 0) {
-    message("Using cached file: ", dest)
-    return(invisible(dest))
+    if (content_ok(dest)) {
+      message("Using cached file: ", dest)
+      return(invisible(dest))
+    }
+    message("Cached file at ", dest, " failed its content check (likely a stale bad ",
+            "download from an earlier run); re-downloading.")
+    file.remove(dest)
   }
   dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
   attempt <- 0
@@ -282,21 +313,57 @@ cache_download <- function(url, dest, max_retries = download_max_retries,
     attempt <- attempt + 1
     ok <- tryCatch({
       utils::download.file(url, dest, mode = "wb", quiet = TRUE)
-      file.exists(dest) && file.info(dest)$size > 0
+      content_ok(dest)
     }, error = function(e) FALSE)
     if (isTRUE(ok)) break
     if (attempt >= max_retries) {
+      validation_note <- ""
+      if (!is.null(validate) && file.exists(dest) && file.info(dest)$size > 0) {
+        preview <- tryCatch(
+          paste(utils::head(readLines(dest, n = 3, warn = FALSE), 3), collapse = " | "),
+          error = function(e) "(could not read the file to preview it)"
+        )
+        validation_note <- paste0(
+          "\nThe last response downloaded without an HTTP error but did not pass its ",
+          "content check (first line(s): ", preview, "). The server is likely returning ",
+          "an interstitial, login, or error page instead of the real file for a plain ",
+          "request, rather than a broken link -- try downloading it manually in a browser ",
+          "and placing it at ", dest, " (this script will use it as-is if it passes the ",
+          "same check)."
+        )
+      }
       stop(
         "Could not download a required source file after ", max_retries, " attempts:\n  ",
-        url, "\nCheck the URL is still current and that you have network access. ",
-        "Not proceeding on a missing input.", call. = FALSE
+        url, "\nCheck the URL is still current and that you have network access.",
+        validation_note, "\nNot proceeding on a missing/invalid input.", call. = FALSE
       )
     }
     wait <- base_wait * 2^(attempt - 1)
-    message("Download failed (attempt ", attempt, "/", max_retries, "). Retrying in ", wait, "s: ", url)
+    message("Download failed or did not validate (attempt ", attempt, "/", max_retries, "). ",
+            "Retrying in ", wait, "s: ", url)
     Sys.sleep(wait)
   }
   invisible(dest)
+}
+
+# Content-check for the Enhanced MSHR file: real data is pipe-delimited
+# with several dozen fields per row. A header line with fewer than 5
+# pipes (an HTML interstitial/error page would have zero) is almost
+# certainly the wrong content, not real MSHR data -- this deliberately
+# does not also require a large row count, so it still passes a small,
+# legitimately filtered extract (including this repo's own test
+# fixtures).
+validate_mshr_content <- function(path) {
+  lines <- tryCatch(readLines(path, n = 2, warn = FALSE), error = function(e) character(0))
+  if (length(lines) < 2) return(FALSE)
+  lengths(regmatches(lines[1], gregexpr("\\|", lines[1]))) >= 5
+}
+
+# Content-check for the IGRA v2 station list: real rows are fixed-width
+# and at least 81 characters (lstyear ends at column 81).
+validate_igra_content <- function(path) {
+  lines <- tryCatch(readLines(path, n = 1, warn = FALSE), error = function(e) character(0))
+  length(lines) >= 1 && nchar(lines[1]) >= 81
 }
 
 # Standardize an identifier column: trim, uppercase, treat common
@@ -439,7 +506,7 @@ if (!any(!is.na(crosswalk$icao_faa_std) | !is.na(crosswalk$wban_std) |
 mshr_raw_path <- file.path(data_raw_dir, "MSHR_Enhanced_Table.txt")
 
 tryCatch({
-  cache_download(mshr_file_url, mshr_raw_path)
+  cache_download(mshr_file_url, mshr_raw_path, validate = validate_mshr_content)
   log_download("MSHR_Enhanced_Table.txt", mshr_file_url, mshr_raw_path,
                get_last_modified(mshr_file_url))
 }, error = function(e) stop(conditionMessage(e), call. = FALSE))
@@ -738,7 +805,7 @@ stations <- stations %>%
 # --- 4a. Download IGRA station list (cached) -------------------------------
 igra_path <- file.path(data_raw_dir, "igra2-station-list.txt")
 tryCatch({
-  cache_download(igra_list_url, igra_path)
+  cache_download(igra_list_url, igra_path, validate = validate_igra_content)
   log_download("igra2-station-list.txt", igra_list_url, igra_path, get_last_modified(igra_list_url))
 }, error = function(e) stop(conditionMessage(e), call. = FALSE))
 
