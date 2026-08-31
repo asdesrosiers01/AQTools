@@ -98,22 +98,44 @@ sf::sf_use_s2(FALSE)
 # change the read_csv() call in Step 1 if yours is a different format.
 crosswalk_path <- "data/raw/station_crosswalk.csv"
 
-# Column-name mapping for the crosswalk.
-# ASSUMPTION: this script has not seen your actual crosswalk file, so
-# the names on the right are a guess based on your description ("keys:
-# WMO, FAA/ICAO, USAF/WBAN"). The script validates these against the
-# real file on load (Step 1) and stops with the actual column names
-# printed out if a REQUIRED one is missing, so a wrong guess here is a
-# one-line fix, not a rewrite. state/station_name are optional -- if
-# your crosswalk does not carry them, they are filled in from MSHR.
+# Column-name mapping for the crosswalk, confirmed against the real file.
+# None of these are hard-required: a crosswalk legitimately may not carry
+# every identifier type (this one has no WMO column at all, for example)
+# or any of the enrichment fields below -- a name that does not match a
+# real column just warns and that field/tier degrades gracefully (see
+# check_cols()). The one thing Step 1 does insist on is that AFTER
+# standardization at least one identifier column produced a usable,
+# non-missing key somewhere in the file; with none at all, no join to
+# MSHR is possible and the script stops rather than silently producing
+# an all-unmatched table.
+#
+# lat/lon/begin_date/end_date/platform are read from the crosswalk itself
+# (this one already carries them) and preferred over Enhanced MSHR's
+# versions where present; MSHR only fills in what the crosswalk lacks
+# (elevation, UTC offset, state, WMO). ish_filename/ghcnh_filename/
+# ghcn_id/match_method/notes are carried straight through to the output
+# for traceability -- exactly the ISH-vs-GHCNh linkage this study needs --
+# and match_method/notes also feed crosswalk_match_issue_flag (Step 3),
+# so a row your own crosswalk already flagged for manual review does not
+# quietly win the "clean" simple-terrain pick over an unflagged one.
 crosswalk_cols <- list(
-  wmo          = "WMO",            # WMO station identifier (required column)
-  icao         = "ICAO",           # ICAO identifier (required column)
-  faa          = "FAA",            # FAA identifier, may equal ICAO for many US stations (required column)
-  usaf         = "USAF",           # USAF identifier, ISH catalog id (required column)
-  wban         = "WBAN",           # WBAN identifier, ISH catalog id (required column)
-  state        = "STATE",          # 2-letter state abbreviation (optional)
-  station_name = "STATION_NAME"    # human-readable name (optional)
+  wmo            = "WMO",                        # not present in this crosswalk; the WMO join tier just never fires
+  icao           = "ICAO",
+  faa            = "FAA Identifier",
+  usaf           = "USAF ID",
+  wban           = "WBAN ID",
+  state          = "STATE",                      # not present; filled in from MSHR
+  station_name   = "Station Name",
+  lat            = "Latitude",
+  lon            = "Longitude",
+  begin_date     = "Data Period Starting",        # YYYYMMDD
+  end_date       = "Data Period Ending",          # YYYYMMDD, a real date here (not an MSHR-style "still active" sentinel)
+  platform       = "Station Type (ASOS/AWOS)",    # currently all "UNKNOWN" in this file -- treated as missing, falls back to MSHR
+  ish_filename   = "ISH Filename",
+  ghcnh_filename = "GHCNh Filename",
+  ghcn_id        = "GHCN_ID",
+  match_method   = "match_method",                # this crosswalk's own match-quality label, e.g. "UNMATCHED"
+  notes          = "notes"                        # this crosswalk's own QA notes, e.g. a flagged coordinate mismatch
 )
 
 # --- Enhanced MSHR column mapping ---------------------------------------
@@ -354,11 +376,9 @@ crosswalk_raw <- readr::read_csv(crosswalk_path, col_types = readr::cols(.defaul
 message("Loaded crosswalk: ", nrow(crosswalk_raw), " rows from ", crosswalk_path,
         " (expected 2,061).")
 
-check_cols(
-  crosswalk_raw, crosswalk_cols,
-  required_roles = c("wmo", "icao", "faa", "usaf", "wban"),
-  df_name = "the crosswalk"
-)
+# Nothing here is individually required (see the comment on crosswalk_cols
+# above) -- a missing name just warns and that column reads as all-NA.
+check_cols(crosswalk_raw, crosswalk_cols, required_roles = character(0), df_name = "the crosswalk")
 
 crosswalk <- crosswalk_raw %>%
   mutate(
@@ -369,11 +389,34 @@ crosswalk <- crosswalk_raw %>%
     usaf_std     = std_id(safe_col(crosswalk_raw, crosswalk_cols$usaf), width = 6),
     wban_std     = std_id(safe_col(crosswalk_raw, crosswalk_cols$wban), width = 5),
     state_cw     = safe_col(crosswalk_raw, crosswalk_cols$state),
-    name_cw      = safe_col(crosswalk_raw, crosswalk_cols$station_name)
+    name_cw      = safe_col(crosswalk_raw, crosswalk_cols$station_name),
+    lat_cw       = suppressWarnings(as.numeric(safe_col(crosswalk_raw, crosswalk_cols$lat))),
+    lon_cw       = suppressWarnings(as.numeric(safe_col(crosswalk_raw, crosswalk_cols$lon))),
+    begin_date_cw_raw = safe_col(crosswalk_raw, crosswalk_cols$begin_date),
+    end_date_cw_raw   = safe_col(crosswalk_raw, crosswalk_cols$end_date),
+    platform_cw  = dplyr::na_if(safe_col(crosswalk_raw, crosswalk_cols$platform), "UNKNOWN"),
+    ish_filename   = safe_col(crosswalk_raw, crosswalk_cols$ish_filename),
+    ghcnh_filename = safe_col(crosswalk_raw, crosswalk_cols$ghcnh_filename),
+    ghcn_id        = safe_col(crosswalk_raw, crosswalk_cols$ghcn_id),
+    match_method_cw = safe_col(crosswalk_raw, crosswalk_cols$match_method),
+    notes_cw        = safe_col(crosswalk_raw, crosswalk_cols$notes)
   ) %>%
   # ICAO and FAA are treated as one join tier: use whichever is present
   # for a given row, preferring ICAO.
   mutate(icao_faa_std = dplyr::coalesce(icao_std, faa_std))
+
+# At least one identifier column must have produced a usable key for at
+# least one row, or no join to MSHR is possible at all. Stop with a clear
+# message rather than silently producing an all-unmatched table.
+if (!any(!is.na(crosswalk$icao_faa_std) | !is.na(crosswalk$wban_std) |
+         !is.na(crosswalk$usaf_std) | !is.na(crosswalk$wmo_std))) {
+  stop(
+    "None of the identifier columns (icao/faa/usaf/wban/wmo) in crosswalk_cols ",
+    "produced a single usable, non-missing key after standardization. Check ",
+    "the crosswalk_cols mapping against the real column names printed above.",
+    call. = FALSE
+  )
+}
 
 
 # =======================================================================
@@ -482,14 +525,34 @@ stations <- bind_rows(matched_icao, matched_wban, matched_wmo) %>%
   mutate(
     state = dplyr::coalesce(state_cw, state_mshr),
     station_name = dplyr::coalesce(name_cw, name_mshr),
-    begin_date = suppressWarnings(lubridate::ymd(begin_date_raw)),
-    end_date_flag_active = end_date_raw %in% c("99991231", "9999-12-31", "", NA_character_),
-    end_date = dplyr::if_else(
-      end_date_flag_active,
+    # Prefer the crosswalk's own lat/lon when it has them (this one does)
+    # -- it is the more current, purpose-built source for this study --
+    # and fall back to MSHR's only where the crosswalk lacks them.
+    lat = dplyr::coalesce(lat_cw, lat),
+    lon = dplyr::coalesce(lon_cw, lon),
+    # Same preference for period of record: the crosswalk's own dates are
+    # real ISH/GHCNh data-period bounds, not MSHR's "still active" sentinel,
+    # so they need no sentinel handling -- only MSHR's do.
+    begin_date_cw = suppressWarnings(lubridate::ymd(begin_date_cw_raw)),
+    end_date_cw   = suppressWarnings(lubridate::ymd(end_date_cw_raw)),
+    por_source_is_cw = !is.na(begin_date_cw) & !is.na(end_date_cw),
+    begin_date_mshr = suppressWarnings(lubridate::ymd(begin_date_raw)),
+    end_date_mshr = dplyr::if_else(
+      end_date_raw %in% c("99991231", "9999-12-31", "", NA_character_),
       Sys.Date(),
       suppressWarnings(lubridate::ymd(end_date_raw))
     ),
-    por_days = as.numeric(end_date - begin_date)
+    begin_date = dplyr::if_else(por_source_is_cw, begin_date_cw, begin_date_mshr),
+    end_date   = dplyr::if_else(por_source_is_cw, end_date_cw, end_date_mshr),
+    por_days = as.numeric(end_date - begin_date),
+    por_source = dplyr::if_else(por_source_is_cw, "crosswalk", "MSHR"),
+    # Crosswalk's own platform reading (ASOS/AWOS), preferred over MSHR's.
+    platform = dplyr::coalesce(platform_cw, platform),
+    # Flag rows the crosswalk itself already marked as a weak or unverified
+    # match (e.g. no isd-history match, or a coordinate-mismatch note), so
+    # Step 5 does not prefer one of these as the "clean" pick.
+    crosswalk_match_issue_flag = (match_method_cw %in% c("UNMATCHED")) |
+      (!is.na(notes_cw) & notes_cw != "")
   ) %>%
   filter(state %in% conus_states)
 
@@ -665,7 +728,8 @@ stations <- stations %>%
     river_margin     = ifelse(!is.na(relief_river_radius_m) & river_flag,
                                pmax(0, (relief_river_radius_m - river_relief_m) / river_relief_m), 0),
     complexity_score = n_mechanisms * 10 + coastal_margin + mountain_margin + river_margin,
-    flag_count       = coastal_flag + mountain_flag + river_flag,  # barrier/outlier flags added in Step 4
+    # barrier/outlier flags added in Step 4
+    flag_count       = coastal_flag + mountain_flag + river_flag + crosswalk_match_issue_flag,
     min_feature_dist_km = pmin(dist_coast_km, dist_river_km, na.rm = TRUE)
   )
 
@@ -774,7 +838,9 @@ simple_pick <- stations %>%
       "distance to nearest coast/river = {round(min_feature_dist_km, 1)} km ",
       "(farthest available in state), POR = {round(por_days, 0)} days, ",
       "match key = {match_key_used}.",
-      "{ifelse(below_simple_threshold_flag, ' NOTE: every candidate station in this state carries at least one flag; this is the least-complex available, not a clean simple site.', '')}"
+      "{ifelse(below_simple_threshold_flag, ' NOTE: every candidate station in this state carries at least one flag; this is the least-complex available, not a clean simple site.', '')}",
+      "{ifelse(crosswalk_match_issue_flag, ' NOTE: the crosswalk itself flagged this station (', '')}",
+      "{ifelse(crosswalk_match_issue_flag, paste0(dplyr::coalesce(match_method_cw, ''), ifelse(!is.na(notes_cw) & notes_cw != '', paste0('; ', notes_cw), ''), ') -- verify manually.'), '')}"
     )
   )
 
@@ -802,7 +868,9 @@ complex_pick <- stations %>%
       "distance to coast = {round(dist_coast_km, 1)} km, distance to river = ",
       "{round(dist_river_km, 1)} km, strongest available in state, ",
       "match key = {match_key_used}.",
-      "{ifelse(below_complex_threshold_flag, ' NOTE: no candidate station in this state cleared any complex-terrain threshold; this is the most-complex-available, not a confirmed complex site.', '')}"
+      "{ifelse(below_complex_threshold_flag, ' NOTE: no candidate station in this state cleared any complex-terrain threshold; this is the most-complex-available, not a confirmed complex site.', '')}",
+      "{ifelse(crosswalk_match_issue_flag, ' NOTE: the crosswalk itself flagged this station (', '')}",
+      "{ifelse(crosswalk_match_issue_flag, paste0(dplyr::coalesce(match_method_cw, ''), ifelse(!is.na(notes_cw) & notes_cw != '', paste0('; ', notes_cw), ''), ') -- verify manually.'), '')}"
     )
   )
 
@@ -811,15 +879,17 @@ station_audit_table <- bind_rows(simple_pick, complex_pick) %>%
   select(
     state, terrain_class, subtype, selection_reason,
     station_name, usaf_std, wban_std, wmo_std, icao_faa_std, match_key_used,
-    lat, lon, elev_m, utc_offset, begin_date, end_date, por_days, platform,
+    lat, lon, elev_m, utc_offset, begin_date, end_date, por_days, por_source, platform,
     dist_coast_km, coastal_flag, coastal_flag_20km,
     dist_river_km, relief_river_radius_m, river_flag,
     relief_mountain_radius_m, mountain_flag,
     complex_flag, n_mechanisms, complexity_score,
     below_complex_threshold_flag, below_simple_threshold_flag,
     raob_id, raob_name, raob_lat, raob_lon, raob_elev_m, raob_dist_km,
-    barrier_review_flag, dist_outlier_flag, flag_count,
-    station_uid
+    barrier_review_flag, dist_outlier_flag,
+    crosswalk_match_issue_flag, match_method_cw, notes_cw,
+    ish_filename, ghcnh_filename, ghcn_id,
+    flag_count, station_uid
   )
 
 message(
@@ -914,10 +984,20 @@ readme_text <- glue::glue(
   "- **barrier_review_flag is a proxy**: a large surface-to-RAOB elevation ",
   "difference (> {raob_elev_diff_m} m) flags a pairing for human review; ",
   "it is not a real terrain-barrier (e.g. ridge-line) analysis.\n",
-  "- **ASOS/AWOS tie-break depends on MSHR carrying a platform field**: ",
-  "if `mshr_cols$platform` did not resolve to a real column in this MSHR ",
-  "export, that tie-break silently had no effect (see the optional-column ",
-  "warnings printed during this run).\n",
+  "- **ASOS/AWOS tie-break depends on some source carrying a usable platform ",
+  "field** (the crosswalk's own, else MSHR's): if neither resolved to a real, ",
+  "non-'UNKNOWN' value for a given station, that tie-break silently had no ",
+  "effect for it (see the optional-column warnings printed during this run).\n",
+  "- **lat/lon/period-of-record/platform are preferred from the crosswalk** ",
+  "when it supplies them, falling back to Enhanced MSHR only where the ",
+  "crosswalk does not; por_source records which one won for each row. ",
+  "Elevation, UTC offset, state, and WMO always come from MSHR, since the ",
+  "crosswalk is not assumed to carry them.\n",
+  "- **crosswalk_match_issue_flag** marks a station the crosswalk itself ",
+  "already flagged as a weak or unverified match (its own match_method/notes ",
+  "columns, if present) -- it feeds into flag_count so such a station is not ",
+  "preferred as the 'clean' pick, but it is still eligible if nothing better ",
+  "is available in that state.\n",
   "- **Enhanced MSHR and IGRA source URLs were not confirmed live** by the ",
   "environment that authored this script (no network access to ",
   "ncei.noaa.gov). If a download step above failed, update the URL ",
