@@ -205,14 +205,23 @@ for (d in c(data_raw_dir, data_processed_dir, output_dir)) {
 }
 
 # --- Source URLs ------------------------------------------------------------
-# ASSUMPTION: these are NCEI's standard file locations for these products
-# as of this writing. This script's execution environment could not
-# reach ncei.noaa.gov to confirm them live -- if either MSHR link 404s,
-# open https://www.ncei.noaa.gov/access/homr/reports in a browser, find
-# the current "Enhanced" download link, and update mshr_file_url below.
+# mshr_file_url confirmed via web search (this environment still cannot
+# reach ncei.noaa.gov directly to verify by fetching it): the correct
+# current filename is MSHR_Enhanced_Table.txt (an earlier version of this
+# script had the wrong case/name and 404'd). HOMR's file links carry a
+# `;jsessionid=...` suffix when captured from a live browser session, but
+# the bare URL below (no jsessionid) should still resolve -- that suffix
+# is session-affinity bookkeeping, not part of the resource path. If this
+# 404s again, open mshr_reports_page in a browser, find the current
+# "Enhanced" download link, and update mshr_file_url to match exactly.
+#
+# No layout/format file has a confirmed stable URL (search turned up
+# nothing, and every HOMR file link appears to be a session-generated
+# download rather than a fixed path) -- the layout-file download step
+# below is skipped, and a delimited file's own header row (read at parse
+# time) is the authoritative column list anyway.
 mshr_reports_page <- "https://www.ncei.noaa.gov/access/homr/reports"
-mshr_file_url      <- "https://www.ncei.noaa.gov/access/homr/file/mshr_enhanced.txt"
-mshr_layout_url    <- "https://www.ncei.noaa.gov/access/homr/file/mshr_enhanced_format.txt"
+mshr_file_url      <- "https://www.ncei.noaa.gov/access/homr/file/MSHR_Enhanced_Table.txt"
 igra_list_url       <- "https://www.ncei.noaa.gov/data/integrated-global-radiosonde-archive/doc/igra2-station-list.txt"
 
 # --- Download retry behavior -----------------------------------------------
@@ -423,9 +432,11 @@ if (!any(!is.na(crosswalk$icao_faa_std) | !is.na(crosswalk$wban_std) |
 # STEP 2: Read Enhanced MSHR, join to crosswalk, attach lat/lon/elev/UTC/POR
 # =======================================================================
 
-# --- 2a. Download MSHR data file and its layout doc (cached) ------------
-mshr_raw_path    <- file.path(data_raw_dir, "MSHR_Enhanced_Table.txt")
-mshr_layout_path <- file.path(data_raw_dir, "mshr_enhanced_format.txt")
+# --- 2a. Download MSHR data file (cached) --------------------------------
+# No layout/format file is fetched here -- it has no confirmed stable URL
+# (see the comment on mshr_file_url above). If a required-column check
+# below fails, confirm field definitions by hand from mshr_reports_page.
+mshr_raw_path <- file.path(data_raw_dir, "MSHR_Enhanced_Table.txt")
 
 tryCatch({
   cache_download(mshr_file_url, mshr_raw_path)
@@ -433,25 +444,11 @@ tryCatch({
                get_last_modified(mshr_file_url))
 }, error = function(e) stop(conditionMessage(e), call. = FALSE))
 
-tryCatch({
-  cache_download(mshr_layout_url, mshr_layout_path)
-  log_download("mshr_enhanced_format.txt", mshr_layout_url, mshr_layout_path,
-               get_last_modified(mshr_layout_url))
-}, error = function(e) {
-  # The layout doc is documentation, not data the joins depend on --
-  # warn and continue rather than stopping the whole run over it.
-  warning("Could not download the MSHR layout file (", conditionMessage(e),
-          "). Continuing, but you should manually confirm MSHR column ",
-          "definitions from ", mshr_reports_page, call. = FALSE)
-})
-message("MSHR layout file (if downloaded) is at ", mshr_layout_path,
-        " -- open it to confirm field definitions if any check below fails.")
-
 # --- 2b. Parse MSHR -------------------------------------------------------
 # The data file's own header row is the authoritative column list for a
 # delimited export (more reliable than hardcoding positions from a doc
-# that can drift). The layout file above is kept for documentation/
-# provenance and for you to cross-check by hand.
+# that can drift, and there is no confirmed layout file to cross-check
+# against anyway).
 mshr_raw <- readr::read_delim(
   mshr_raw_path, delim = "|",
   col_types = readr::cols(.default = "c"),
