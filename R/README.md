@@ -46,13 +46,24 @@ source.
 - `outputs/station_map.html` -- a leaflet QA map of the picks, colored by
   terrain class
 
-## A note on this copy of the script
+## Testing done on this copy of the script
 
-It was written and reviewed in an environment with no R installation and
-no network access to `ncei.noaa.gov`, so it could not be executed end to
-end before being committed. The logic has been checked by hand, and the
-crosswalk/MSHR column-name mappings are called out explicitly as
-assumptions (see the comments at the top of the script) precisely because
-they could not be verified against real files. Run it once on your data
-and report back any errors -- they are expected to be a handful of column
-names or a stale download URL, not a logic problem.
+This repo's execution environment has no CRAN access and no network route
+to `ncei.noaa.gov`, so `elevatr`, `rnaturalearth`, `leaflet`, and
+`htmlwidgets` could not be installed, and the real download/geometry
+sources could not be reached. What *was* possible: installing `sf`,
+`terra`, `geosphere`, and the rest via `apt install r-cran-*`, and running
+Steps 1, 2, 4, 5, and 6 unmodified against the synthetic fixtures in
+`data/raw/test_fixtures/`, with Step 3's three network calls swapped for
+small synthetic sf/terra objects (everything else in Step 3 -- the CRS
+transforms, buffering, distance and relief extraction -- ran as-is). That
+run caught and fixed two real bugs (a PROJ-network-grid failure mode that
+silently corrupted geometry, and a `glue()` indentation bug in the README
+template) -- see `data/raw/test_fixtures/TEST_HARNESS_NOTES.md` for the
+full account of what was and was not exercised.
+
+Not tested: the real `rnaturalearth`/`elevatr` calls themselves, Step 7
+(leaflet), and anything at the real 2,061-station scale. Run it once on
+your data and report back any errors -- given the above, they are more
+likely to be a stale download URL or a column-name mismatch than a logic
+problem.

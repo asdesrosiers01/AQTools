@@ -11,6 +11,12 @@ outputs/*
 !data/processed/.gitkeep
 !outputs/.gitkeep
 
+# ...except the small synthetic test fixtures, which are source (checked
+# in on purpose so the pipeline's logic can be sanity-checked before
+# running against real data). See data/raw/test_fixtures/generate_fixtures.R.
+!data/raw/test_fixtures/
+!data/raw/test_fixtures/**
+
 # R session artifacts
 .Rhistory
 .RData

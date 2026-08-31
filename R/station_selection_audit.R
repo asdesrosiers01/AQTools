@@ -63,6 +63,19 @@ suppressPackageStartupMessages({
   library(glue)
 })
 
+# PROJ (used by sf's st_transform()) can reach for higher-accuracy datum
+# grids over the network (cdn.proj.org) when it thinks one might be
+# available. Loading both sf and terra in the same session can leave that
+# network path enabled; if the grid CDN is then unreachable (firewalled,
+# offline, this kind of sandboxed environment), the failed fetch does not
+# just fall back gracefully -- it was observed here to silently corrupt
+# the transformed geometry (st_is_valid() -> NA, followed by a GEOS crash
+# in st_distance()/st_union() with no warning that would point at the
+# real cause). Forcing PROJ to use its local grids avoids that failure
+# mode entirely; the accuracy cost is at most a few meters, negligible
+# against the 5-10 km terrain thresholds this script uses.
+sf::sf_proj_network(FALSE)
+
 # ---------------------------------------------------------------------
 # PARAMETERS -- edit these, nothing else below should need to change
 # ---------------------------------------------------------------------
@@ -813,13 +826,17 @@ message("Wrote ", csv_path)
 # --- Build the README from what actually happened in this run --------------
 download_entries <- mget(ls(download_log), envir = download_log)
 download_lines <- purrr::imap_chr(download_entries, function(entry, nm) {
+  # .trim = FALSE: glue() otherwise strips the common leading whitespace
+  # from every line, which would flatten these into top-level bullets
+  # instead of nested ones.
   glue::glue(
     "- **{nm}**\n",
     "  - source: {entry$url}\n",
     "  - cached at: {entry$path}\n",
     "  - retrieved: {entry$retrieved_at}\n",
     "  - local file timestamp: {entry$file_mtime}\n",
-    "  - server Last-Modified (if reported): {entry$source_last_modified}"
+    "  - server Last-Modified (if reported): {entry$source_last_modified}",
+    .trim = FALSE
   )
 })
 
