@@ -226,6 +226,15 @@ for (d in c(data_raw_dir, data_processed_dir, output_dir)) {
 # 404s again, open mshr_reports_page in a browser, find the current
 # "Enhanced" download link, and update mshr_file_url to match exactly.
 #
+# If the download fails validation instead (HOMR's endpoint has been
+# observed to return an HTTP 200 with an unrelated page for a plain,
+# non-browser request -- see cache_download()'s error message), the fix
+# is not a code change: download the file by hand from mshr_reports_page
+# in a real browser and save it at data/raw/MSHR_Enhanced_Table.txt.
+# cache_download() checks that path first and uses a file already there
+# as-is once it passes the content check, so this is a one-time step.
+# See R/README.md, "If a download won't cooperate: manual fallback".
+#
 # No layout/format file has a confirmed stable URL (search turned up
 # nothing, and every HOMR file link appears to be a session-generated
 # download rather than a fixed path) -- the layout-file download step

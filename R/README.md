@@ -34,6 +34,28 @@ cache. Every download is retried with exponential backoff and the script
 stops with a clear message rather than proceeding on a partial or missing
 source.
 
+## If a download won't cooperate: manual fallback
+
+NCEI's HOMR file endpoint (the Enhanced MSHR source) has been observed to
+return an HTTP 200 with an unrelated page instead of the real file for a
+plain, non-browser request -- it appears to require an active browser
+session that a script cannot easily replicate. If `cache_download()`
+exhausts its retries on `mshr_file_url` (or any other source), you do not
+need code changes to get past it:
+
+1. Open the URL printed in the error (or `mshr_reports_page`, currently
+   `https://www.ncei.noaa.gov/access/homr/reports`) in your own browser
+   and download the file by hand -- a real browser session gets through
+   where the script cannot.
+2. Save it at the exact cached path the script names in its error message
+   (for MSHR, that's `data/raw/MSHR_Enhanced_Table.txt`, relative to your
+   working directory when you run the script).
+3. Re-run. `cache_download()` checks that path first: if a file is
+   already there and passes its content check (real MSHR data is
+   pipe-delimited with dozens of fields per row), it is used as-is and
+   the network fetch is skipped entirely -- so this is a one-time step,
+   not something you repeat on every run.
+
 ## Outputs
 
 - `data/processed/station_audit_table.csv` -- the selection table
