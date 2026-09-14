@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Methodology - Desrosiers AQ Information</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --chart:#e4e2d6; --panel:#f4f2e9; --panel-2:#ebe8dc;
+  --rule:#c3bfae; --rule-hard:#9b9784; --ink:#23261f; --ink-soft:#5d6154; --magenta:#a8386c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--chart);color:var(--ink);
+  font-family:"Barlow Semi Condensed",-apple-system,BlinkMacSystemFont,"Segoe UI","Roboto Condensed",sans-serif;
+  font-size:17px;line-height:1.55;
+}
+.page{max-width:800px;margin:0 auto;padding:0 1.25rem 3rem}
+header{padding:2.2rem 1.25rem 1.4rem;border-bottom:2px solid var(--rule-hard);background:var(--panel);margin-bottom:1.8rem}
+header .inner{max-width:800px;margin:0 auto}
+header h1{margin:0 0 .15rem;font-size:2rem;font-weight:700;letter-spacing:.005em}
+header .role{color:var(--ink-soft);font-size:1.1rem;margin:0}
+h2{font-size:1.3rem;font-weight:700;margin:2.2rem 0 .7rem;padding-bottom:.3rem;border-bottom:1px solid var(--rule-hard)}
+h3{font-size:1.05rem;font-weight:700;margin:1.4rem 0 .5rem}
+p{margin:0 0 .9rem}
+ul,ol{margin:0 0 .9rem;padding-left:1.3rem}
+li{margin-bottom:.4rem}
+strong{font-weight:600}
+code{background:var(--panel-2);padding:.05rem .3rem;font-size:.92em}
+a{color:var(--magenta)}
+table{border-collapse:collapse;width:100%;margin:0 0 1.2rem;font-size:.95rem}
+th,td{text-align:left;padding:.4rem .6rem;border-bottom:1px solid var(--rule)}
+th{color:var(--ink-soft);font-weight:600;border-bottom:2px solid var(--rule-hard)}
+.finding{
+  background:var(--panel);border:1px solid var(--rule-hard);border-left:4px solid var(--magenta);
+  padding:1rem 1.2rem;margin:1.2rem 0;
+}
+.finding h3{margin-top:0}
+.finding p:last-child{margin-bottom:0}
+footer{max-width:800px;margin:2.5rem auto 0;padding:1rem 1.25rem 0;border-top:1px solid var(--rule-hard);color:var(--ink-soft);font-size:.85rem}
+</style> </head> <body>
+<!-- ===== SITE-NAV: shared across every page on the site ===== -->
+<style>
+.site-nav{
+  background:var(--ink);color:var(--panel);
+  display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;
+  padding:.55rem 1.25rem;font-size:.92rem;
+}
+.site-nav a{
+  color:var(--panel);text-decoration:none;opacity:.82;white-space:nowrap;
+}
+.site-nav a:hover,.site-nav a.current{opacity:1;text-decoration:underline}
+.site-nav .brand{
+  font-weight:700;letter-spacing:.01em;margin-right:auto;opacity:1;
+  font-size:1rem;
+}
+.site-nav .sep{opacity:.35;margin:0 -.4rem}
+@media (max-width:820px){
+  .site-nav{gap:.9rem .8rem}
+  .site-nav .brand{width:100%;margin-right:0;margin-bottom:.1rem}
+}
+</style>
+<header class="site-nav">
+  <a href="index.html" class="brand">Desrosiers AQ Information</a>
+  <a href="index.html">Home</a>
+  <a href="methodology.html" class="current">Methodology</a>
+  <span class="sep">&middot;</span>
+  <a href="ghcnh_stations.html">GHCNh</a>
+  <a href="ish_isd_stations_GLOBAL.html">ISH / ISD</a>
+  <a href="upperair_igra_stations_GLOBAL.html">Upper Air</a>
+  <a href="surface_upperair_pairing_GLOBAL.html">Pairing</a>
+  <a href="aerminute_1min_availability.html">AERMINUTE</a>
+</header>
+<!-- ===== END SITE-NAV ===== -->
+
+<header> <div class="inner"> <h1>Methodology &amp; Data Sources</h1> <p class="role">How the tools on this site are built, and what I've found while building them</p> </div> </header> <div class="page"> <p>Every map on this site is built the same way: pull a NOAA or EPA inventory directly from its primary source, parse it against the published format specification (not a guess), and disclose whatever the data itself turns out to say &mdash; including when it disagrees with its own documentation. This page is the long version of what's summarized in each map's footer.</p> <h2>Data sources</h2> <table> <tr><th>Dataset</th><th>Source</th><th>Format reference</th></tr> <tr><td>GHCNh station inventory</td><td>NOAA NCEI Global Historical Climatology Network hourly</td><td>ghcnh-station-list.txt</td></tr> <tr><td>ISH / ISD station history</td><td>NOAA NCEI Integrated Surface Database</td><td>isd-history.csv, isd-history.txt</td></tr> <tr><td>Upper-air station inventory</td><td>NOAA NCEI Integrated Global Radiosonde Archive v2</td><td>igra2-station-list.txt, igra2-list-format.txt</td></tr> <tr><td>1-minute ASOS availability</td><td>NOAA NCEI ASOS one-minute data, Day-1 Month Inventory Report</td><td>td6405.txt</td></tr> <tr><td>AERMINUTE 2013 gap</td><td>EPA AERMINUTE User's Guide, Appendix B</td><td>EPA-454/B document series</td></tr> </table> <h2>General approach</h2> <ul> <li>Station lists are parsed from fixed-width or delimited text against the publisher's own documented column layout, not inferred from a sample of rows.</li> <li>Every map states, on its own page, when its underlying file was retrieved and whether that copy was downloaded by the build script or supplied directly.</li> <li>Sentinel values (missing-data placeholders like <code>-999.9</code> or <code>0.000, 0.000</code>) are excluded from plotted results and counted explicitly in the footer, rather than silently plotted as real positions.</li> <li>Tools are built in R, styled consistently across the site, and the build scripts are available on request &mdash; nothing here is a black box.</li> </ul> <h2>Findings worth flagging</h2> <p>These came out of building and QA'ing the tools, not out of a separate research exercise. They're the kind of thing that matters if you're citing this data in a permitting record or a technical paper.</p> <div class="finding"> <h3>A blank record in the IGRA v2 station list</h3> <p>Line 955 of the current <code>igra2-station-list.txt</code> carries no station ID, name, or coordinate &mdash; every field is blank except the period of record (1946&ndash;2025) and a sounding count of 70,410. It sorts alphabetically between <code>HUM00012982</code> and <code>ICM00004089</code>, and <code>ICM00004018</code> Keflav&iacute;k is otherwise absent from the inventory. The blanked record is <strong>probably</strong> Keflav&iacute;k &mdash; that's an inference from sort position and absence, not a NOAA statement &mdash; and it is not plotted on the upper-air map because no coordinate is published for it.</p> </div> <div class="finding"> <h3>ISD's freeze date doesn't quite match its own data</h3> <p>NCEI announced that ISD would not be updated beyond 24 August 2025. The station history file itself tells a slightly different story: 8,985 records end exactly on that date, but 2,194 more run past it, to a maximum end date of 28 August 2025. Treat 2025-08-24 as the effective freeze and the few days beyond it as residual, not as evidence the dataset is still being maintained.</p> </div> <div class="finding"> <h3>The AERMINUTE 2013 gap, parsed and verified</h3> <p>Appendix B of the AERMINUTE User's Guide lists ASOS stations missing 1-minute data for June&ndash;December 2013. A first parse of the guide's text came back with 247 stations against a stated total of 253 &mdash; six Wyoming stations were dropped because the parser's line buffer didn't reset after a failed match. Fixed, the parse returns exactly 253, matching the guide.</p> </div> <div class="finding"> <h3>The surface/upper-air pairing tool is proximity only</h3> <p>The pairing map selects each surface station's nearest upper-air site that meets a given period-of-record filter. That is a distance calculation, not a representativeness determination under 40 CFR Part 51 Appendix W. Proximity is not the test Appendix W applies, and the nearest sounding site can sit on the wrong side of a mountain range or a coastline. Use the tool to build a candidate list; argue representativeness separately, on the merits.</p> </div> <h2>What the AERMINUTE map does and doesn't show</h2> <p>The 1-minute ASOS availability map on this site layers two different kinds of information, and they answer different questions:</p> <ul> <li><strong>The 2013 gap</strong> is a documented historical defect &mdash; a specific six-month hole in the archive for 253 stations, taken directly from the AERMINUTE guide.</li> <li><strong>The current snapshot</strong> is a single month's completeness percentages from NCEI's Day-1 Month Inventory Report, which the agency reissues as that month progresses. It is not a continuous record.</li> </ul> <p>What it does not show is continuous archive-availability history between 2014 and today. NCEI's bulk <code>asos-onemin</code> folders stop at 2022, and the only ongoing record after that is a long, irregular series of dated inventory snapshots in NCEI's <a href="https://www.ncei.noaa.gov/pub/data/asos-onemin/Inventory/" target="_blank" rel="noopener noreferrer">Inventory directory</a> &mdash; each one a point-in-time report covering a different window, not a running total. Building a genuine multi-year completeness picture means fetching and reconciling dozens of those files against each other. That work has not been done yet; it's a natural next step for this tool, not something the current map claims to already do.</p> <h2>Limitations that apply across the board</h2> <ul> <li>Presence in an inventory does not mean a station's data are complete, current, or usable in AERMET. Confirm variables and period of record in the station's own data file before relying on it.</li> <li>None of these tools make a regulatory determination. They narrow a search and support scoping; the judgment calls that follow &mdash; representativeness, data sufficiency, period selection &mdash; are yours to make and document.</li> <li>Coordinates are as published by NOAA. Neither ISD nor IGRA guarantees a coordinate matches the instrument's location at every date in its period of record.</li> </ul> </div> <footer>Andrew Desrosiers, CCM &middot; Desrosiers AQ Information &middot; views and tools are independent, see the About page for the full disclaimer.</footer> </body> </html>
