@@ -777,15 +777,17 @@ button:hover{background:#fbfaf4}
 .thead{
   height:2.05rem;border-bottom:2px solid var(--rule-hard);font-size:.86rem;
   font-weight:600;color:var(--ink-soft);background:var(--panel);flex:none;
+  overflow-x:hidden;
 }
 .thead span{cursor:pointer;user-select:none}
 .thead span:hover{color:var(--ink)}
 .thead .num,.trow .num{text-align:right}
-#scroller{flex:1;overflow-y:auto;position:relative}
+#scroller{flex:1;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
 #spacer{position:relative;width:100%}
 .trow{
   position:absolute;left:0;right:0;height:1.85rem;font-size:.97rem;
   border-bottom:1px solid var(--rule);cursor:pointer;
+  width:max-content;min-width:100%;
 }
 .trow:nth-child(even){background:rgba(0,0,0,.022)}
 .trow:hover{background:rgba(168,56,108,.12)}
@@ -801,11 +803,28 @@ footer{
   font-size:.88rem;color:var(--ink-soft);flex:none;
 }
 footer b{color:var(--ink)}
+/* sticky ID + Name columns: on narrow screens the table scrolls
+   horizontally instead of hiding columns, so every field stays reachable */
+.thead>span:nth-child(1),.trow>span:nth-child(1),
+.thead>span:nth-child(2),.trow>span:nth-child(2){
+  position:sticky;z-index:2;background-color:var(--panel);
+}
+.trow>span:nth-child(1){left:0}
+.trow>span:nth-child(2){left:9.5rem;box-shadow:6px 0 6px -6px rgba(0,0,0,.3)}
+/* .thead is its own scroll container (synced to #scroller via JS), and its
+   sticky offsets are measured from ITS OWN padding edge, so back out the
+   row padding here to line up with the (unpadded) row sticky columns above */
+.thead>span:nth-child(1){left:-1.25rem}
+.thead>span:nth-child(2){left:8.25rem;box-shadow:6px 0 6px -6px rgba(0,0,0,.3)}
+.trow:hover>span:nth-child(1),.trow:hover>span:nth-child(2){
+  background-image:linear-gradient(rgba(168,56,108,.12),rgba(168,56,108,.12));
+}
 @media (max-width:900px){
-  .thead,.trow{grid-template-columns:8.5rem minmax(8rem,1fr) 5rem 5.5rem 6rem}
-  .thead .hide,.trow .hide{display:none}
+  html,body{height:auto}
+  body{overflow-x:hidden;overflow-y:visible}
   #mapwrap{height:38vh}
   #maphint{display:none}
+  #tablewrap{flex:none;height:65vh;min-height:22rem}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* ===== sources & data notes: header link + modal ===== */
@@ -1320,6 +1339,8 @@ function paint(){
   }
 }
 scroller.addEventListener("scroll",paint,{passive:true});
+const theadEl=document.querySelector(".thead");
+scroller.addEventListener("scroll",()=>{ theadEl.scrollLeft=scroller.scrollLeft; },{passive:true});
 
 document.querySelectorAll(".thead span[data-sort]").forEach(el=>{
   el.onclick=()=>{
