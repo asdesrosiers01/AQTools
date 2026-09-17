@@ -85,6 +85,7 @@ footer{max-width:900px;margin:2.5rem auto 0;padding:1rem 1.25rem 0;border-top:1p
   <a href="aerminute_1min_availability.html">AERMINUTE</a>
   <a href="classi_areas.html">Class I Areas</a>
   <a href="naaqs.html" class="current">NAAQS</a>
+  <a href="surfprep.html">Surface Prep</a>
 </header>
 <!-- ===== END SITE-NAV ===== -->
 
@@ -113,53 +114,106 @@ footer{max-width:900px;margin:2.5rem auto 0;padding:1rem 1.25rem 0;border-top:1p
 <h2>The standards</h2>
 <div class="tablewrap">
 <table>
-<tr><th>Pollutant</th><th>Averaging time</th><th>Level</th><th>Form</th><th>Standard</th></tr>
+<tr><th>Pollutant</th><th>Averaging time</th><th>Threshold</th><th>Form</th><th>Standard</th></tr>
 <tr><td rowspan="2">Carbon monoxide (CO)</td><td>8-hour</td><td>9 ppm</td><td>Not to be exceeded more than once per year</td><td>Primary</td></tr>
 <tr><td>1-hour</td><td>35 ppm</td><td>Not to be exceeded more than once per year</td><td>Primary</td></tr>
 <tr><td>Lead (Pb)</td><td>Rolling 3-month average</td><td>0.15 &micro;g/m&sup3;</td><td>Not to be exceeded</td><td>Primary and secondary</td></tr>
 <tr><td rowspan="2">Nitrogen dioxide (NO&#8322;)</td><td>1-hour</td><td>100 ppb</td><td>98th percentile of daily max 1-hr concentrations, averaged over 3 years</td><td>Primary</td></tr>
 <tr><td>Annual</td><td>53 ppb</td><td>Annual mean</td><td>Primary and secondary</td></tr>
 <tr><td>Ozone (O&#8323;)</td><td>8-hour</td><td>0.070 ppm</td><td>Annual 4th-highest daily max 8-hr concentration, averaged over 3 years</td><td>Primary and secondary</td></tr>
-<tr><td rowspan="2">PM2.5</td><td>Annual</td><td>9.0 &micro;g/m&sup3; primary<br>15.0 &micro;g/m&sup3; secondary</td><td>Annual mean, averaged over 3 years</td><td>Primary and secondary (different levels)</td></tr>
+<tr><td rowspan="2">PM2.5</td><td>Annual</td><td>9.0 &micro;g/m&sup3; primary<br>15.0 &micro;g/m&sup3; secondary</td><td>Annual mean, averaged over 3 years</td><td>Primary and secondary (different thresholds)</td></tr>
 <tr><td>24-hour</td><td>35 &micro;g/m&sup3;</td><td>98th percentile, averaged over 3 years</td><td>Primary and secondary</td></tr>
 <tr><td>PM10</td><td>24-hour</td><td>150 &micro;g/m&sup3;</td><td>Not to be exceeded more than once per year on average over 3 years</td><td>Primary and secondary</td></tr>
 <tr><td rowspan="2">Sulfur dioxide (SO&#8322;)</td><td>1-hour</td><td>75 ppb</td><td>99th percentile of daily max 1-hr concentrations, averaged over 3 years</td><td>Primary</td></tr>
 <tr><td>3-hour</td><td>0.5 ppm</td><td>Not to be exceeded more than once per year</td><td>Secondary</td></tr>
 </table>
 </div>
-<p>PM2.5 is the one pollutant with different primary and secondary levels at
+<p>PM2.5 is the one pollutant with different primary and secondary thresholds at
 the same averaging time; every other row's primary and secondary form and
-level are identical where both apply.</p>
+threshold are identical where both apply.</p>
 
-<h2>Comparing a model to the standard: individual years vs. a multi-year average</h2>
+<h2>Comparing a model to the standard: individual years vs. a 5-year run</h2>
 <p>Every NAAQS form is either a <b>multi-year average</b> of an annual
 statistic (NO&#8322; 1-hr, SO&#8322; 1-hr, O&#8323; 8-hr, PM2.5 annual, PM2.5
 24-hr &mdash; all averaged over 3 years) or a <b>not-to-be-exceeded</b> form
-evaluated against the single highest year (CO, PM10, Pb). That distinction
-carries straight through into how a design value is built from AERMOD output,
-per 40 CFR Part 51 Appendix W &sect;8.4 and EPA's AERMOD Implementation
-Guide:</p>
+evaluated against the single highest year (CO, PM10, Pb). 40 CFR Part 51
+Appendix W &sect;9.2.2(a)&ndash;(b) sets the overall framework: the design
+concentration compared to the NAAQS is the background concentration
+(&sect;8.3) plus the modeled source impact, and the specific NAAQS form
+governs how those are combined &mdash; but Appendix W explicitly does not
+spell out the year-by-year mechanics itself, pointing instead to "applicable
+modeling guidance available on the EPA's SCRAM website" (&sect;9.2.2(b)). In
+practice, that guidance is pollutant/standard-specific EPA memoranda, most
+directly the March 1, 2011 memo <i>Additional Clarification Regarding
+Application of Appendix W Modeling Guidance for the 1-hour NO2 NAAQS</i>,
+which states the general rule EPA has since applied to the other 3-year-average
+forms as well:</p>
 <ul>
-<li><b>3-year-average forms:</b> pull the relevant annual statistic (e.g. the
-4th-highest daily max 8-hr value for ozone, the 98th-percentile daily max 1-hr
-value for NO&#8322;) from each modeled year, then average three consecutive
-years. With the 5 years of NWS meteorological data Appendix W recommends as
-the preferred minimum, that gives three overlapping 3-year windows (years
-1&ndash;3, 2&ndash;4, 3&ndash;5); the modeled design value is the
-<i>highest</i> of those three window averages, not a single 5-year average.
-With only 1 year of site-specific data, EPA guidance allows using that single
-year's statistic directly as a surrogate design value, understanding it as a
-less robust estimate.</li>
-<li><b>Not-to-be-exceeded forms:</b> use the single highest modeled
-concentration (the "H1H", first-highest, across the full modeled period) with
-no averaging across years.</li>
+<li><b>3-year-average forms, run with 5 years of NWS meteorological data</b>
+(the preferred minimum per &sect;8.4.2(e)): pull the relevant annual statistic
+from each of the 5 modeled years and average <i>all 5</i> directly. EPA's 2011
+NO&#8322; memo is explicit that this "serves as an unbiased estimate of the
+3-year average," and that modeling "rolling 3-year averages" (years
+1&ndash;3, 2&ndash;4, 3&ndash;5, taking the highest) "is not required." A
+generic multi-year average is the default; a previous version of this page
+stated the rolling-3-year/highest-window approach as if it were required,
+which this EPA memo directly contradicts &mdash; corrected here.</li>
+<li><b>3-year-average forms, run with fewer years:</b> with exactly 3 years
+of data, average those 3. With only 1 year of site-specific data (the
+regulatory minimum), that single year's statistic is used directly as a
+less-certain surrogate design value.</li>
+<li><b>Not-to-be-exceeded forms</b> (CO, PM10, Pb): use the single highest
+modeled concentration across the full modeled period ("H1H", first-highest),
+with no averaging across years.</li>
 </ul>
 <p>Regional and state permitting authorities sometimes layer their own
-implementation guidance on top of this (e.g. specifying which years of met
-data to use, or how to handle a design value driven by an unrepresentative
-single year); confirm the applicable authority's current modeling guidance
-before finalizing a design value calculation, this page states the federal
-default, not every jurisdiction's overlay on it.</p>
+implementation guidance on top of this (e.g. requiring a rolling-3-year
+review anyway, or specifying which years of met data to use); confirm the
+applicable authority's current modeling guidance before finalizing a design
+value calculation &mdash; this page states the federal default, not every
+jurisdiction's overlay on it.</p>
+
+<h2>Significant Impact Levels (SILs)</h2>
+<p>A SIL is a small concentration threshold used to screen a proposed source
+out of a full NAAQS/PSD-increment cumulative impact analysis: model the
+project alone first, and if its impact is below the SIL everywhere, a
+cumulative analysis (adding background and other sources) generally isn't
+required. Some SILs are codified; others are EPA guidance a reviewing
+authority may or may not follow &mdash; this table says which is which.</p>
+<div class="tablewrap">
+<table>
+<tr><th>Pollutant</th><th>Averaging time</th><th>SIL</th><th>Basis</th></tr>
+<tr><td rowspan="2">Carbon monoxide (CO)</td><td>1-hour</td><td>2,000 &micro;g/m&sup3;</td><td>40 CFR 51.165(b)(2), codified</td></tr>
+<tr><td>8-hour</td><td>500 &micro;g/m&sup3;</td><td>40 CFR 51.165(b)(2), codified</td></tr>
+<tr><td rowspan="2">Nitrogen dioxide (NO&#8322;)</td><td>1-hour</td><td>7.5 &micro;g/m&sup3;</td><td>Interim, EPA memo 29 Jun 2010 (reaffirmed 1 Mar 2011) &mdash; guidance, not codified</td></tr>
+<tr><td>Annual</td><td>1 &micro;g/m&sup3;</td><td>40 CFR 51.165(b)(2), codified</td></tr>
+<tr><td rowspan="4">Sulfur dioxide (SO&#8322;)</td><td>1-hour</td><td>7.8 &micro;g/m&sup3;</td><td>Interim, EPA memo 23 Aug 2010 &mdash; guidance, not codified</td></tr>
+<tr><td>3-hour</td><td>25 &micro;g/m&sup3;</td><td>40 CFR 51.165(b)(2), codified</td></tr>
+<tr><td>24-hour</td><td>5 &micro;g/m&sup3;</td><td>40 CFR 51.165(b)(2), codified</td></tr>
+<tr><td>Annual</td><td>1 &micro;g/m&sup3;</td><td>40 CFR 51.165(b)(2), codified</td></tr>
+<tr><td>PM10</td><td>24-hour</td><td>5 &micro;g/m&sup3;</td><td>40 CFR 51.165(b)(2), codified</td></tr>
+<tr><td rowspan="2">PM2.5</td><td>24-hour</td><td>1.2 &micro;g/m&sup3;</td><td>40 CFR 51.165(b)(2), codified; reaffirmed EPA memo 30 Apr 2024</td></tr>
+<tr><td>Annual (primary)</td><td>0.13 &micro;g/m&sup3;</td><td>EPA memo 30 Apr 2024 &mdash; guidance only, and explicitly <i>lower</i> than the 0.3 &micro;g/m&sup3; still codified at 40 CFR 51.165(b)(2); see note below</td></tr>
+<tr><td>Ozone (O&#8323;)</td><td>8-hour</td><td>1.0 ppb</td><td>EPA memo 30 Apr 2024 (policy first established 17 Apr 2018) &mdash; guidance only, not codified</td></tr>
+</table>
+</div>
+<p>Ozone has no codified SIL at all: it's a secondary pollutant (formed from
+precursor emissions, not emitted directly), so any ozone significant-impact
+screening is inherently a modeling-guidance construct rather than a NAAQS/PSD
+regulatory requirement. The PM2.5 annual SIL has been revised twice since the
+original 2010 rule (0.3 &rarr; 0.2 in 2018 guidance &rarr; 0.13 in 2024
+guidance, the last tied to the 2024 NAAQS revision) without the codified
+regulatory text at 40 CFR 51.165(b)(2) ever being updated to match &mdash;
+that regulation still says 0.3 &micro;g/m&sup3;. Confirm which value your
+reviewing authority expects before relying on the newer guidance figure. SILs
+above are the Class II (general/default) values used outside Class I areas;
+Class I areas carry their own, smaller SIL values for the increments where
+they've been established, which this table does not include &mdash; see the
+<a href="classi_areas.html">Class I Areas</a> tool for the areas themselves.
+Background concentrations are not part of a SIL comparison; a source below
+the SIL can still combine with background to exceed the NAAQS, which is
+exactly why a cumulative analysis remains the fallback when the SIL screen
+doesn't clear.</p>
 
 <h2>Background concentrations</h2>
 <p>A modeled concentration from a single source is compared against the
