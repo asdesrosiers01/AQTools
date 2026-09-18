@@ -758,6 +758,12 @@ input:focus-visible,select:focus-visible,button:focus-visible{
 }
 button{cursor:pointer;background:var(--panel-2)}
 button:hover{background:#fbfaf4}
+a.dl-btn{
+  display:inline-block;font-family:inherit;font-size:.98rem;color:var(--ink);
+  background:var(--panel-2);border:1px solid var(--rule-hard);border-radius:0;
+  padding:.3rem .45rem;cursor:pointer;text-decoration:none;
+}
+a.dl-btn:hover{background:#fbfaf4}
 #q{min-width:16rem}
 .coord{width:6.5rem}
 
@@ -1026,6 +1032,16 @@ it: use <b>isd-inventory.csv</b> for station-year-month completeness before
 committing to a station for AERMET.
 Non-U.S. ISD data are subject to WMO Resolution 40 redistribution
 restrictions.
+<b>Download button:</b> each station's popup can fetch and download that
+station's own most recent 5 years of raw ISD data directly from NCEI's
+per-station-year archive, concatenated into one multi-member gzip file (the
+format supports this; standard tools decompress the whole sequence as one
+continuous stream) &mdash; unlike the rest of this tool, that button needs a
+live internet connection at click time, and checks which of the last 10
+calendar years actually exist for that station before fetching. NCEI has
+announced this direct-download path is slated for retirement in favor of
+NOAA Open Data Dissemination (NODD); if it disappears, this button will start
+failing even though the map itself keeps working.
     </div>
   </div>
 
@@ -1189,11 +1205,74 @@ function popupHTML(r){
     row("Country", r[I_CC]) +
     extra +
     row("From reference", r[I_KM].toFixed(1)+" km") +
-    '</table></div>';
+    '</table>'+
+    '<div class="dlwrap"><button type="button" class="dl-btn" onclick="downloadIsd(\''+r[I_ID]+'\',this)">Download most recent 5 years</button>'+
+    '<div class="dl-status" style="font-size:.82rem;color:var(--ink-soft);margin-top:.3rem"></div></div>'+
+    '</div>';
 }
 function openStation(r, pan){
   if(pan) map.panTo([r[I_LAT], r[I_LON]]);
   L.popup({maxWidth:340}).setLatLng([r[I_LAT], r[I_LON]]).setContent(popupHTML(r)).openOn(map);
+}
+async function poolFetch(items, worker, concurrency){
+  const results = new Array(items.length);
+  let next = 0;
+  async function run(){ while(next < items.length){ const i = next++; results[i] = await worker(items[i], i); } }
+  await Promise.all(Array.from({length:concurrency}, run));
+  return results;
+}
+// id is "USAF-WBAN", matching NCEI's own file naming. Two-phase: HEAD-check
+// which of the last 10 calendar years exist (cheap) before GET-ing the full
+// content of the 5 most recent that do.
+async function downloadIsd(id, btn){
+  const statusEl = document.querySelector(".dl-status");
+  if(btn) btn.disabled = true;
+  const curYear = new Date().getFullYear();
+  const candidates = Array.from({length:10}, (_,i) => curYear - i);
+  if(statusEl) statusEl.textContent = `Checking which years exist for ${id}...`;
+  const urlFor = y => `https://www.ncei.noaa.gov/pub/data/noaa/${y}/${id}-${y}.gz`;
+  const heads = await poolFetch(candidates, async y => {
+    try { const res = await fetch(urlFor(y), {method:"HEAD"}); return res.ok ? y : null; }
+    catch(e) { return null; }
+  }, 5);
+  const years = heads.filter(y => y !== null).sort((a,b)=>b-a).slice(0,5).sort((a,b)=>a-b);
+  if(!years.length){
+    if(statusEl) statusEl.textContent = `No ISD data found for ${id} in ${curYear-9}-${curYear}.`;
+    if(btn) btn.disabled = false;
+    return;
+  }
+  let done = 0;
+  if(statusEl) statusEl.textContent = `Fetching ${years.length} year(s) of data for ${id}...`;
+  const buffers = await poolFetch(years, async y => {
+    let buf = null;
+    try { const res = await fetch(urlFor(y)); if(res.ok) buf = await res.arrayBuffer(); }
+    catch(e) {}
+    done++;
+    if(statusEl) statusEl.textContent = `Fetching ${years.length} year(s) of data... ${done}/${years.length}`;
+    return buf;
+  }, 3);
+  const valid = buffers.filter(Boolean);
+  if(!valid.length){
+    if(statusEl) statusEl.textContent = `Years were found for ${id} but none could be fetched; try again.`;
+    if(btn) btn.disabled = false;
+    return;
+  }
+  // A .gz file is valid as a "multi-member" stream when several are simply
+  // concatenated byte-for-byte -- gunzip and most tools read the whole
+  // sequence as one continuous decompressed stream, no repackaging needed.
+  const total = valid.reduce((s,b) => s + b.byteLength, 0);
+  const combined = new Uint8Array(total);
+  let offset = 0;
+  for(const b of valid){ combined.set(new Uint8Array(b), offset); offset += b.byteLength; }
+  const filename = `${id}_${years[0]}-${years[years.length-1]}.gz`;
+  const url = URL.createObjectURL(new Blob([combined], {type:"application/gzip"}));
+  if(btn){
+    const link = document.createElement("a");
+    link.href = url; link.download = filename; link.className = "dl-btn";
+    link.textContent = `Save ${filename}`;
+    btn.replaceWith(link);
+  }
+  if(statusEl) statusEl.textContent = `Ready: click "Save ${filename}" to write it to disk (this click, not the fetch, is what your browser treats as the actual download).`;
 }
 
 map.on("click", e=>{

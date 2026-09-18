@@ -760,6 +760,14 @@ button{cursor:pointer;background:var(--panel-2)}
 button:hover{background:#fbfaf4}
 #q{min-width:16rem}
 .coord{width:6.5rem}
+/* a "download" link swapped in for a button once a file is ready, needs the
+   same look since <a> doesn't pick up the button{} rules above */
+a.dl-btn{
+  display:inline-block;font-family:inherit;font-size:.98rem;color:var(--ink);
+  background:var(--panel-2);border:1px solid var(--rule-hard);border-radius:0;
+  padding:.3rem .45rem;cursor:pointer;text-decoration:none;
+}
+a.dl-btn:hover{background:#fbfaf4}
 
 .legend{display:flex;gap:.15rem;flex-wrap:wrap}
 .legend button{display:flex;align-items:center;gap:.35rem;padding:.25rem .5rem;font-size:.9rem}
@@ -923,7 +931,7 @@ header .stats{flex:none;white-space:nowrap}
 </header>
 <!-- ===== END SITE-NAV ===== -->
 
- <header> <h1>AERMINUTE 1-minute ASOS availability</h1> <div class="sub">FAA/NWS/DOD ASOS network, joined to NOAA ISD station identity</div> <button type="button" id="notesBtn" class="noteslink" aria-haspopup="dialog">Sources &amp; data notes</button> <div class="stats"> <div><b>800</b> stations</div> <div><b>222</b> in the 2013 gap</div> <div><b>52</b> below 50% this snapshot</div> <div><b>187</b> at 100% this snapshot</div> </div> </header> <div id="mapwrap"> <div id="map"></div> <button id="fitbtn">Zoom to results</button> <div id="maphint">Click a station for its record. Click open ground to move the reference point.</div> <div id="readout"></div> </div> <div class="controls"> <div class="field"> <label for="q">Search name or ICAO</label> <input id="q" type="search" placeholder="TUSCON, KTUS" autocomplete="off"> </div> <div class="field"> <label for="cc">Country</label> <select id="cc"><option value="">All</option></select> </div> <div class="field"> <label for="st">US state</label> <select id="st"><option value="">All</option></select> </div> <div class="field"> <label for="rlat">Reference latitude</label> <input id="rlat" class="coord" type="number" step="0.0001"> </div> <div class="field"> <label for="rlon">Reference longitude</label> <input id="rlon" class="coord" type="number" step="0.0001"> </div> <div class="field"> <label for="rad">Within (km)</label> <input id="rad" class="coord" type="number" step="1" min="0" placeholder="any"> </div> <div class="field"> <label for="minavg">Min. avg % this snapshot</label> <input id="minavg" class="coord" type="number" step="1" min="0" max="100" placeholder="any"> </div> <div class="field"> <label>Layers</label> <div class="legend"> <button type="button" id="gapToggle" aria-pressed="true"> <span class="dot" style="background:#a8386c"></span><span>2013 gap only</span> </button> </div> </div> </div> <div id="tablewrap"> <div class="thead"> <span data-sort="0">ICAO</span> <span data-sort="1">Name</span> <span data-sort="2" class="hide">St</span> <span data-sort="3" class="hide">Cty</span> <span data-sort="6" class="num">Avg % (11d)</span> <span data-sort="7">2013 gap</span> <span data-sort="9" class="num">Dist km</span> </div> <div id="scroller"><div id="spacer"></div><div id="empty" hidden></div></div> </div> <div id="notesOverlay" role="dialog" aria-modal="true" aria-labelledby="notesTitle"> <div id="notesBox"> <div id="notesHead"> <h2 id="notesTitle">Sources &amp; data notes</h2> <button type="button" id="notesClose" aria-label="Close">Close</button> </div> <div id="notesBody"> Source: NOAA NCEI <b>Day-1 Month Inventory Report</b>, produced 12 September 2026, covering Days 1&ndash;11 of September 2026. Each cell is the percent of that station's 1-minute records received for that day; <b>C</b> means 100%. This is a live monthly snapshot the report re-issues as the month progresses, not a continuous archive-availability record. It was supplied directly rather than downloaded by this build. <b>Historical 2013 gap:</b> stations marked "2013 gap" appear in Appendix B of the AERMINUTE User's Guide, which lists <b>253</b> ASOS stations missing 1-minute data for June&ndash;December 2013. That flag is independent of the snapshot above it: a station can show 100% in this month's data and still carry a documented six-month hole in 2013. Station identity and coordinates come from the NOAA ISD station history (<b>isd-history.csv</b>), matched by ICAO identifier. <b>800</b> of 801 stations in the report matched; <b>KXWA</b> did not appear in the ISD history file under that ICAO code and is excluded here. <b>What this map does not show:</b> continuous archive coverage between 2014 and today. NCEI's bulk <code>asos-onemin</code> archive folders stop at 2022, and the only ongoing record is a long, irregular series of dated inventory snapshots in NCEI's <a href="https://www.ncei.noaa.gov/pub/data/asos-onemin/Inventory/" target="_blank" rel="noopener noreferrer">Inventory directory</a>, each covering a different, non-overlapping window. Building a true multi-year completeness picture means fetching and reconciling dozens of those files rather than one. That has not been done here; treat this map as two things layered together, a known historical defect and a current snapshot, not a full history. Presence in this inventory does not mean the station's 1-minute data are otherwise suitable for AERMINUTE. Confirm variables and period of record in the station's own data file before use. </div> </div> <script>
+ <header> <h1>AERMINUTE 1-minute ASOS availability</h1> <div class="sub">FAA/NWS/DOD ASOS network, joined to NOAA ISD station identity</div> <button type="button" id="notesBtn" class="noteslink" aria-haspopup="dialog">Sources &amp; data notes</button> <div class="stats"> <div><b>800</b> stations</div> <div><b>222</b> in the 2013 gap</div> <div><b>52</b> below 50% this snapshot</div> <div><b>187</b> at 100% this snapshot</div> </div> </header> <div id="mapwrap"> <div id="map"></div> <button id="fitbtn">Zoom to results</button> <div id="maphint">Click a station for its record. Click open ground to move the reference point.</div> <div id="readout"></div> </div> <div class="controls"> <div class="field"> <label for="q">Search name or ICAO</label> <input id="q" type="search" placeholder="TUSCON, KTUS" autocomplete="off"> </div> <div class="field"> <label for="cc">Country</label> <select id="cc"><option value="">All</option></select> </div> <div class="field"> <label for="st">US state</label> <select id="st"><option value="">All</option></select> </div> <div class="field"> <label for="rlat">Reference latitude</label> <input id="rlat" class="coord" type="number" step="0.0001"> </div> <div class="field"> <label for="rlon">Reference longitude</label> <input id="rlon" class="coord" type="number" step="0.0001"> </div> <div class="field"> <label for="rad">Within (km)</label> <input id="rad" class="coord" type="number" step="1" min="0" placeholder="any"> </div> <div class="field"> <label for="minavg">Min. avg % this snapshot</label> <input id="minavg" class="coord" type="number" step="1" min="0" max="100" placeholder="any"> </div> <div class="field"> <label>Layers</label> <div class="legend"> <button type="button" id="gapToggle" aria-pressed="true"> <span class="dot" style="background:#a8386c"></span><span>2013 gap only</span> </button> </div> </div> </div> <div id="tablewrap"> <div class="thead"> <span data-sort="0">ICAO</span> <span data-sort="1">Name</span> <span data-sort="2" class="hide">St</span> <span data-sort="3" class="hide">Cty</span> <span data-sort="6" class="num">Avg % (11d)</span> <span data-sort="7">2013 gap</span> <span data-sort="9" class="num">Dist km</span> </div> <div id="scroller"><div id="spacer"></div><div id="empty" hidden></div></div> </div> <div id="notesOverlay" role="dialog" aria-modal="true" aria-labelledby="notesTitle"> <div id="notesBox"> <div id="notesHead"> <h2 id="notesTitle">Sources &amp; data notes</h2> <button type="button" id="notesClose" aria-label="Close">Close</button> </div> <div id="notesBody"> Source: NOAA NCEI <b>Day-1 Month Inventory Report</b>, produced 12 September 2026, covering Days 1&ndash;11 of September 2026. Each cell is the percent of that station's 1-minute records received for that day; <b>C</b> means 100%. This is a live monthly snapshot the report re-issues as the month progresses, not a continuous archive-availability record. It was supplied directly rather than downloaded by this build. <b>Historical 2013 gap:</b> stations marked "2013 gap" appear in Appendix B of the AERMINUTE User's Guide, which lists <b>253</b> ASOS stations missing 1-minute data for June&ndash;December 2013. That flag is independent of the snapshot above it: a station can show 100% in this month's data and still carry a documented six-month hole in 2013. Station identity and coordinates come from the NOAA ISD station history (<b>isd-history.csv</b>), matched by ICAO identifier. <b>800</b> of 801 stations in the report matched; <b>KXWA</b> did not appear in the ISD history file under that ICAO code and is excluded here. <b>What this map does not show:</b> continuous archive coverage between 2014 and today. NCEI's bulk <code>asos-onemin</code> archive folders stop at 2022, and the only ongoing record is a long, irregular series of dated inventory snapshots in NCEI's <a href="https://www.ncei.noaa.gov/pub/data/asos-onemin/Inventory/" target="_blank" rel="noopener noreferrer">Inventory directory</a>, each covering a different, non-overlapping window. Building a true multi-year completeness picture means fetching and reconciling dozens of those files rather than one. That has not been done here; treat this map as two things layered together, a known historical defect and a current snapshot, not a full history. Presence in this inventory does not mean the station's 1-minute data are otherwise suitable for AERMINUTE. Confirm variables and period of record in the station's own data file before use. <b>Download button:</b> each station's popup can fetch and download that station's own raw 1-minute files directly from NCEI's <code>asos-onemin</code> archive (page-1 wind and page-2 precip, concatenated by month into two files) &mdash; unlike the rest of this tool, that button needs a live internet connection at click time, and is fixed to 2018&ndash;2022 since that is where NCEI's bulk archive for both pages currently ends. </div> </div> <script>
 /* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
  * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade
@@ -1066,11 +1074,74 @@ function popupHTML(r){
     row("Country", r[I_CC]) +
     row("Avg % received, days 1&ndash;11 Sep 2026", r[I_AVG].toFixed(1)+"%") +
     row("From reference", r[I_KM].toFixed(1)+" km") +
-    '</table>'+sparkline(r[I_VALS])+gapNote+'</div>';
+    '</table>'+sparkline(r[I_VALS])+gapNote+
+    '<div class="dlwrap"><div style="display:flex;gap:.4rem;flex-wrap:wrap">'+
+    '<button type="button" class="dl-btn" onclick="downloadAerminute(\''+r[I_ICAO]+'\',\'6405\',this)">Download wind, '+AERMINUTE_START_YEAR+'&ndash;'+AERMINUTE_END_YEAR+'</button>'+
+    '<button type="button" class="dl-btn" onclick="downloadAerminute(\''+r[I_ICAO]+'\',\'6406\',this)">Download precip, '+AERMINUTE_START_YEAR+'&ndash;'+AERMINUTE_END_YEAR+'</button>'+
+    '</div><div class="dl-status" style="font-size:.82rem;color:var(--ink-soft);margin-top:.3rem"></div></div>'+
+    '</div>';
 }
 function openStation(r, pan){
   if(pan) map.panTo([r[I_LAT], r[I_LON]]);
   L.popup({maxWidth:320}).setLatLng([r[I_LAT], r[I_LON]]).setContent(popupHTML(r)).openOn(map);
+}
+// NCEI's bulk asos-onemin archive stops at 2022 (see Sources & data notes);
+// there is no more recent bulk download, so the window is fixed, not
+// "current year minus 5".
+const AERMINUTE_END_YEAR = 2022, AERMINUTE_START_YEAR = AERMINUTE_END_YEAR - 4;
+async function poolFetch(items, worker, concurrency){
+  const results = new Array(items.length);
+  let next = 0;
+  async function run(){ while(next < items.length){ const i = next++; results[i] = await worker(items[i], i); } }
+  await Promise.all(Array.from({length:concurrency}, run));
+  return results;
+}
+const AERMINUTE_PAGE_LABEL = { "6405": "wind (page-1)", "6406": "precip (page-2)" };
+// Chrome (and other browsers) can silently drop a download triggered by
+// a.click() once too much async time has passed since the original click,
+// treating it as an unrequested "automatic" download rather than one tied
+// to direct user action -- this bit us in testing (a large first download
+// worked, a second one from a separate button did not, with no visible
+// error). The fix is a prepare-then-save two-step: the async fetch/build
+// work happens first, then a *second*, genuinely synchronous click on a
+// real download link is what actually saves the file.
+async function downloadAerminute(icao, dsPrefix, btn){
+  const statusEl = document.querySelector(".dl-status");
+  const label = AERMINUTE_PAGE_LABEL[dsPrefix];
+  if(btn) btn.disabled = true;
+  const months = [];
+  for(let y=AERMINUTE_START_YEAR; y<=AERMINUTE_END_YEAR; y++)
+    for(let m=1; m<=12; m++) months.push([y,m]);
+  let done = 0;
+  if(statusEl) statusEl.textContent = `Fetching ${label} data, ${AERMINUTE_START_YEAR}-${AERMINUTE_END_YEAR}...`;
+  const results = await poolFetch(months, async ([y,m]) => {
+    const mm = String(m).padStart(2,"0");
+    const url = `https://www.ncei.noaa.gov/pub/data/asos-onemin/${dsPrefix}-${y}/${dsPrefix}0${icao}${y}${mm}.dat`;
+    let text = null;
+    try {
+      const res = await fetch(url);
+      if(res.ok) text = await res.text();
+    } catch(e) { /* leave as null, counted as missing below */ }
+    done++;
+    if(statusEl) statusEl.textContent = `Fetching ${label} data... ${done}/${months.length}`;
+    return text;
+  }, 8);
+  const chunks = results.filter(Boolean);
+  if(!chunks.length){
+    if(statusEl) statusEl.textContent = `No ${label} data found for ${icao} in ${AERMINUTE_START_YEAR}-${AERMINUTE_END_YEAR}.`;
+    if(btn) btn.disabled = false;
+    return;
+  }
+  const blob = new Blob([chunks.join("")], {type:"text/plain"});
+  const filename = `${icao}_${dsPrefix}_${AERMINUTE_START_YEAR}-${AERMINUTE_END_YEAR}.dat`;
+  const url = URL.createObjectURL(blob);
+  if(btn){
+    const link = document.createElement("a");
+    link.href = url; link.download = filename; link.className = "dl-btn";
+    link.textContent = `Save ${filename} (${chunks.length}/${months.length} files)`;
+    btn.replaceWith(link);
+  }
+  if(statusEl) statusEl.textContent = `Ready: click "Save ${filename}" to write it to disk (this click, not the fetch, is what your browser treats as the actual download).`;
 }
 map.on("click", e=>{
   const hit=nearestAt(e.latlng,9);
