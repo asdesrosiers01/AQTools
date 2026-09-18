@@ -1,0 +1,25 @@
+{
+  "name": "aqtools",
+  "version": "1.0.0",
+  "description": "Air Quality Processing Tools",
+  "main": "index.js",
+  "scripts": {
+    "build": "node build.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asdesrosiers01/AQTools.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/asdesrosiers01/AQTools/issues"
+  },
+  "homepage": "https://github.com/asdesrosiers01/AQTools#readme",
+  "devDependencies": {
+    "html-minifier-terser": "^7.2.0"
+  }
+}
