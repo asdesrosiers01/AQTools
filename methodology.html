@@ -58,6 +58,32 @@ footer{max-width:800px;margin:2.5rem auto 0;padding:1rem 1.25rem 0;border-top:1p
   font-size:1rem;
 }
 .site-nav .sep{opacity:.35;margin:0 -.4rem}
+.navdrop{position:relative}
+.navdrop-btn{
+  background:none;border:0;color:var(--panel);font-family:inherit;font-size:.92rem;
+  padding:.55rem 0;cursor:pointer;opacity:.82;display:flex;align-items:center;gap:.3rem;
+}
+.navdrop-btn .car{font-size:.65em;position:relative;top:.05em}
+.navdrop-btn:hover,.navdrop.open .navdrop-btn,.navdrop.current-group>.navdrop-btn{opacity:1;background:none}
+.navdrop.current-group>.navdrop-btn{text-decoration:underline}
+.navdrop-menu{
+  display:none;flex-direction:column;position:absolute;top:100%;left:0;
+  background:var(--panel-2);border:1px solid var(--rule-hard);min-width:13rem;z-index:80;
+  box-shadow:0 8px 16px rgba(0,0,0,.28);
+}
+.navdrop.open .navdrop-menu{display:flex}
+.navdrop-menu a{
+  color:var(--ink);opacity:1;padding:.5rem .8rem;white-space:nowrap;text-decoration:none;
+}
+.navdrop-menu a:hover{background:var(--chart)}
+.navdrop-menu a.current{background:var(--chart);text-decoration:underline}
+@media (max-width:820px){
+  .navdrop-menu{position:static;box-shadow:none;border:0;margin:.2rem 0 .2rem .8rem;background:none}
+  .navdrop-menu a{color:var(--panel);opacity:.82;padding:.3rem 0}
+  .navdrop-menu a:hover,.navdrop-menu a.current{background:none;opacity:1}
+  .navdrop.open .navdrop-menu{display:flex}
+  .navdrop-btn{color:var(--panel)}
+}
 @media (max-width:820px){
   .site-nav{gap:.9rem .8rem}
   .site-nav .brand{width:100%;margin-right:0;margin-bottom:.1rem}
@@ -67,17 +93,59 @@ footer{max-width:800px;margin:2.5rem auto 0;padding:1rem 1.25rem 0;border-top:1p
   <a href="index.html" class="brand">Desrosiers AQ Information</a>
   <a href="index.html">Home</a>
   <a href="methodology.html" class="current">Methodology</a>
-  <span class="sep">&middot;</span>
-  <a href="ghcnh_stations.html">GHCNh</a>
-  <a href="ish_isd_stations_GLOBAL.html">ISH / ISD</a>
-  <a href="upperair_igra_stations_GLOBAL.html">Upper Air</a>
-  <a href="surface_upperair_pairing_GLOBAL.html">Pairing</a>
-  <a href="aerminute_1min_availability.html">AERMINUTE</a>
-  <a href="classi_areas.html">Class I Areas</a>
-  <a href="naaqs.html">NAAQS</a>
-  <a href="surfprep.html">Surface Prep</a>
-  <a href="background_dv.html">Background DV</a>
+  <div class="navdrop">
+    <button type="button" class="navdrop-btn" aria-expanded="false" aria-haspopup="true">Meteorology <span class="car">&#9662;</span></button>
+    <div class="navdrop-menu">
+      <a href="ghcnh_stations.html">GHCNh</a>
+      <a href="ish_isd_stations_US.html">ISH / ISD (US)</a>
+      <a href="ish_isd_stations_GLOBAL.html">ISH / ISD (Global)</a>
+      <a href="upperair_igra_stations_US.html">Upper Air (US)</a>
+      <a href="upperair_igra_stations_GLOBAL.html">Upper Air (Global)</a>
+      <a href="aerminute_1min_availability.html">AERMINUTE</a>
+      <a href="surface_upperair_pairing_US.html">Pairing (US)</a>
+      <a href="surface_upperair_pairing_GLOBAL.html">Pairing (Global)</a>
+    </div>
+  </div>
+  <div class="navdrop">
+    <button type="button" class="navdrop-btn" aria-expanded="false" aria-haspopup="true">Permitting &amp; Regulatory <span class="car">&#9662;</span></button>
+    <div class="navdrop-menu">
+      <a href="naaqs.html">NAAQS</a>
+      <a href="classi_areas.html">Class I Areas</a>
+      <a href="background_dv.html">Background DV</a>
+      <a href="merp_calculator.html">MERP Calculator</a>
+    </div>
+  </div>
+  <div class="navdrop">
+    <button type="button" class="navdrop-btn" aria-expanded="false" aria-haspopup="true">Tools <span class="car">&#9662;</span></button>
+    <div class="navdrop-menu">
+      <a href="surfprep.html">Surface Prep</a>
+      <a href="unit_conversion.html">Unit Conversion</a>
+    </div>
+  </div>
 </header>
+<script>
+(function(){
+  var drops = document.querySelectorAll(".navdrop");
+  function closeAll(except){
+    drops.forEach(function(d){
+      if(d === except) return;
+      d.classList.remove("open");
+      d.querySelector(".navdrop-btn").setAttribute("aria-expanded","false");
+    });
+  }
+  drops.forEach(function(d){
+    var btn = d.querySelector(".navdrop-btn");
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var wasOpen = d.classList.contains("open");
+      closeAll(null);
+      if(!wasOpen){ d.classList.add("open"); btn.setAttribute("aria-expanded","true"); }
+    });
+  });
+  document.addEventListener("click", function(){ closeAll(null); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeAll(null); });
+})();
+</script>
 <!-- ===== END SITE-NAV ===== -->
 
 <header> <div class="inner"> <h1>Methodology &amp; Data Sources</h1> <p class="role">How the tools on this site are built, and what I've found while building them</p> </div> </header> <div class="page"> <p>Every map on this site is built the same way: pull a NOAA or EPA inventory directly from its primary source, parse it against the published format specification (not a guess), and disclose whatever the data itself turns out to say &mdash; including when it disagrees with its own documentation. This page is the long version of what's summarized in each map's footer.</p> <h2>Data sources</h2> <table> <tr><th>Dataset</th><th>Source</th><th>Format reference</th></tr> <tr><td>GHCNh station inventory</td><td>NOAA NCEI Global Historical Climatology Network hourly</td><td>ghcnh-station-list.txt</td></tr> <tr><td>ISH / ISD station history</td><td>NOAA NCEI Integrated Surface Database</td><td>isd-history.csv, isd-history.txt</td></tr> <tr><td>Upper-air station inventory</td><td>NOAA NCEI Integrated Global Radiosonde Archive v2</td><td>igra2-station-list.txt, igra2-list-format.txt</td></tr> <tr><td>1-minute ASOS availability</td><td>NOAA NCEI ASOS one-minute data, Day-1 Month Inventory Report</td><td>td6405.txt</td></tr> <tr><td>AERMINUTE 2013 gap</td><td>EPA AERMINUTE User's Guide, Appendix B</td><td>EPA-454/B document series</td></tr> </table> <h2>General approach</h2> <ul> <li>Station lists are parsed from fixed-width or delimited text against the publisher's own documented column layout, not inferred from a sample of rows.</li> <li>Every map states, on its own page, when its underlying file was retrieved and whether that copy was downloaded by the build script or supplied directly.</li> <li>Sentinel values (missing-data placeholders like <code>-999.9</code> or <code>0.000, 0.000</code>) are excluded from plotted results and counted explicitly in the footer, rather than silently plotted as real positions.</li> <li>Tools are built in R, styled consistently across the site, and the build scripts are available on request &mdash; nothing here is a black box.</li> </ul> <h2>Findings worth flagging</h2> <p>These came out of building and QA'ing the tools, not out of a separate research exercise. They're the kind of thing that matters if you're citing this data in a permitting record or a technical paper.</p> <div class="finding"> <h3>A blank record in the IGRA v2 station list</h3> <p>Line 955 of the current <code>igra2-station-list.txt</code> carries no station ID, name, or coordinate &mdash; every field is blank except the period of record (1946&ndash;2025) and a sounding count of 70,410. It sorts alphabetically between <code>HUM00012982</code> and <code>ICM00004089</code>, and <code>ICM00004018</code> Keflav&iacute;k is otherwise absent from the inventory. The blanked record is <strong>probably</strong> Keflav&iacute;k &mdash; that's an inference from sort position and absence, not a NOAA statement &mdash; and it is not plotted on the upper-air map because no coordinate is published for it.</p> </div> <div class="finding"> <h3>ISD's freeze date doesn't quite match its own data</h3> <p>NCEI announced that ISD would not be updated beyond 24 August 2025. The station history file itself tells a slightly different story: 8,985 records end exactly on that date, but 2,194 more run past it, to a maximum end date of 28 August 2025. Treat 2025-08-24 as the effective freeze and the few days beyond it as residual, not as evidence the dataset is still being maintained.</p> </div> <div class="finding"> <h3>The AERMINUTE 2013 gap, parsed and verified</h3> <p>Appendix B of the AERMINUTE User's Guide lists ASOS stations missing 1-minute data for June&ndash;December 2013. A first parse of the guide's text came back with 247 stations against a stated total of 253 &mdash; six Wyoming stations were dropped because the parser's line buffer didn't reset after a failed match. Fixed, the parse returns exactly 253, matching the guide.</p> </div> <div class="finding"> <h3>The surface/upper-air pairing tool is proximity only</h3> <p>The pairing map selects each surface station's nearest upper-air site that meets a given period-of-record filter. That is a distance calculation, not a representativeness determination under 40 CFR Part 51 Appendix W. Proximity is not the test Appendix W applies, and the nearest sounding site can sit on the wrong side of a mountain range or a coastline. Use the tool to build a candidate list; argue representativeness separately, on the merits.</p> </div> <h2>What the AERMINUTE map does and doesn't show</h2> <p>The 1-minute ASOS availability map on this site layers two different kinds of information, and they answer different questions:</p> <ul> <li><strong>The 2013 gap</strong> is a documented historical defect &mdash; a specific six-month hole in the archive for 253 stations, taken directly from the AERMINUTE guide.</li> <li><strong>The current snapshot</strong> is a single month's completeness percentages from NCEI's Day-1 Month Inventory Report, which the agency reissues as that month progresses. It is not a continuous record.</li> </ul> <p>What it does not show is continuous archive-availability history between 2014 and today. NCEI's bulk <code>asos-onemin</code> folders stop at 2022, and the only ongoing record after that is a long, irregular series of dated inventory snapshots in NCEI's <a href="https://www.ncei.noaa.gov/pub/data/asos-onemin/Inventory/" target="_blank" rel="noopener noreferrer">Inventory directory</a> &mdash; each one a point-in-time report covering a different window, not a running total. Building a genuine multi-year completeness picture means fetching and reconciling dozens of those files against each other. That work has not been done yet; it's a natural next step for this tool, not something the current map claims to already do.</p> <h2>Limitations that apply across the board</h2> <ul> <li>Presence in an inventory does not mean a station's data are complete, current, or usable in AERMET. Confirm variables and period of record in the station's own data file before relying on it.</li> <li>None of these tools make a regulatory determination. They narrow a search and support scoping; the judgment calls that follow &mdash; representativeness, data sufficiency, period selection &mdash; are yours to make and document.</li> <li>Coordinates are as published by NOAA. Neither ISD nor IGRA guarantees a coordinate matches the instrument's location at every date in its period of record.</li> </ul> </div> <footer>Andrew Desrosiers, CCM &middot; Desrosiers AQ Information &middot; views and tools are independent, see the About page for the full disclaimer.</footer> </body> </html>

@@ -902,6 +902,32 @@ header .stats{flex:none;white-space:nowrap}
   font-size:1rem;
 }
 .site-nav .sep{opacity:.35;margin:0 -.4rem}
+.navdrop{position:relative}
+.navdrop-btn{
+  background:none;border:0;color:var(--panel);font-family:inherit;font-size:.92rem;
+  padding:.55rem 0;cursor:pointer;opacity:.82;display:flex;align-items:center;gap:.3rem;
+}
+.navdrop-btn .car{font-size:.65em;position:relative;top:.05em}
+.navdrop-btn:hover,.navdrop.open .navdrop-btn,.navdrop.current-group>.navdrop-btn{opacity:1;background:none}
+.navdrop.current-group>.navdrop-btn{text-decoration:underline}
+.navdrop-menu{
+  display:none;flex-direction:column;position:absolute;top:100%;left:0;
+  background:var(--panel-2);border:1px solid var(--rule-hard);min-width:13rem;z-index:80;
+  box-shadow:0 8px 16px rgba(0,0,0,.28);
+}
+.navdrop.open .navdrop-menu{display:flex}
+.navdrop-menu a{
+  color:var(--ink);opacity:1;padding:.5rem .8rem;white-space:nowrap;text-decoration:none;
+}
+.navdrop-menu a:hover{background:var(--chart)}
+.navdrop-menu a.current{background:var(--chart);text-decoration:underline}
+@media (max-width:820px){
+  .navdrop-menu{position:static;box-shadow:none;border:0;margin:.2rem 0 .2rem .8rem;background:none}
+  .navdrop-menu a{color:var(--panel);opacity:.82;padding:.3rem 0}
+  .navdrop-menu a:hover,.navdrop-menu a.current{background:none;opacity:1}
+  .navdrop.open .navdrop-menu{display:flex}
+  .navdrop-btn{color:var(--panel)}
+}
 @media (max-width:820px){
   .site-nav{gap:.9rem .8rem}
   .site-nav .brand{width:100%;margin-right:0;margin-bottom:.1rem}
@@ -911,17 +937,59 @@ header .stats{flex:none;white-space:nowrap}
   <a href="index.html" class="brand">Desrosiers AQ Information</a>
   <a href="index.html">Home</a>
   <a href="methodology.html">Methodology</a>
-  <span class="sep">&middot;</span>
-  <a href="ghcnh_stations.html">GHCNh</a>
-  <a href="ish_isd_stations_GLOBAL.html">ISH / ISD</a>
-  <a href="upperair_igra_stations_GLOBAL.html" class="current">Upper Air</a>
-  <a href="surface_upperair_pairing_GLOBAL.html">Pairing</a>
-  <a href="aerminute_1min_availability.html">AERMINUTE</a>
-  <a href="classi_areas.html">Class I Areas</a>
-  <a href="naaqs.html">NAAQS</a>
-  <a href="surfprep.html">Surface Prep</a>
-  <a href="background_dv.html">Background DV</a>
+  <div class="navdrop current-group">
+    <button type="button" class="navdrop-btn" aria-expanded="false" aria-haspopup="true">Meteorology <span class="car">&#9662;</span></button>
+    <div class="navdrop-menu">
+      <a href="ghcnh_stations.html">GHCNh</a>
+      <a href="ish_isd_stations_US.html">ISH / ISD (US)</a>
+      <a href="ish_isd_stations_GLOBAL.html">ISH / ISD (Global)</a>
+      <a href="upperair_igra_stations_US.html" class="current">Upper Air (US)</a>
+      <a href="upperair_igra_stations_GLOBAL.html">Upper Air (Global)</a>
+      <a href="aerminute_1min_availability.html">AERMINUTE</a>
+      <a href="surface_upperair_pairing_US.html">Pairing (US)</a>
+      <a href="surface_upperair_pairing_GLOBAL.html">Pairing (Global)</a>
+    </div>
+  </div>
+  <div class="navdrop">
+    <button type="button" class="navdrop-btn" aria-expanded="false" aria-haspopup="true">Permitting &amp; Regulatory <span class="car">&#9662;</span></button>
+    <div class="navdrop-menu">
+      <a href="naaqs.html">NAAQS</a>
+      <a href="classi_areas.html">Class I Areas</a>
+      <a href="background_dv.html">Background DV</a>
+      <a href="merp_calculator.html">MERP Calculator</a>
+    </div>
+  </div>
+  <div class="navdrop">
+    <button type="button" class="navdrop-btn" aria-expanded="false" aria-haspopup="true">Tools <span class="car">&#9662;</span></button>
+    <div class="navdrop-menu">
+      <a href="surfprep.html">Surface Prep</a>
+      <a href="unit_conversion.html">Unit Conversion</a>
+    </div>
+  </div>
 </header>
+<script>
+(function(){
+  var drops = document.querySelectorAll(".navdrop");
+  function closeAll(except){
+    drops.forEach(function(d){
+      if(d === except) return;
+      d.classList.remove("open");
+      d.querySelector(".navdrop-btn").setAttribute("aria-expanded","false");
+    });
+  }
+  drops.forEach(function(d){
+    var btn = d.querySelector(".navdrop-btn");
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var wasOpen = d.classList.contains("open");
+      closeAll(null);
+      if(!wasOpen){ d.classList.add("open"); btn.setAttribute("aria-expanded","true"); }
+    });
+  });
+  document.addEventListener("click", function(){ closeAll(null); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeAll(null); });
+})();
+</script>
 <!-- ===== END SITE-NAV ===== -->
 
 
