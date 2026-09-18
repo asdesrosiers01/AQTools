@@ -758,6 +758,12 @@ input:focus-visible,select:focus-visible,button:focus-visible{
 }
 button{cursor:pointer;background:var(--panel-2)}
 button:hover{background:#fbfaf4}
+a.dl-btn{
+  display:inline-block;font-family:inherit;font-size:.98rem;color:var(--ink);
+  background:var(--panel-2);border:1px solid var(--rule-hard);border-radius:0;
+  padding:.3rem .45rem;cursor:pointer;text-decoration:none;
+}
+a.dl-btn:hover{background:#fbfaf4}
 #q{min-width:16rem}
 .coord{width:6.5rem}
 
@@ -1024,6 +1030,13 @@ measure of twice-daily coverage; a station can show a long record and still
 have too few 00Z/12Z ascents for a given year. Confirm the actual sounding
 availability in the station data file before selecting an upper-air site, and
 confirm representativeness on the terms of 40 CFR Part 51 Appendix W.
+<b>Download button:</b> each station's popup can fetch and download that
+station's complete period-of-record sounding data directly from NCEI's IGRA
+v2 archive (one zip file per station, covering its full record rather than a
+fixed recent window &mdash; IGRA does not publish per-year files the way the
+surface archives do). Unlike the rest of this tool, that button needs a live
+internet connection at click time; long-record stations can be tens of MB
+zipped.
     </div>
   </div>
 
@@ -1187,11 +1200,37 @@ function popupHTML(r){
     row("Country", r[I_CC]) +
     extra +
     row("From reference", r[I_KM].toFixed(1)+" km") +
-    '</table></div>';
+    '</table>'+
+    '<div class="dlwrap"><button type="button" class="dl-btn" onclick="downloadIgra(\''+r[I_ID]+'\',this)">Download full period of record</button>'+
+    '<div class="dl-status" style="font-size:.82rem;color:var(--ink-soft);margin-top:.3rem"></div></div>'+
+    '</div>';
 }
 function openStation(r, pan){
   if(pan) map.panTo([r[I_LAT], r[I_LON]]);
   L.popup({maxWidth:340}).setLatLng([r[I_LAT], r[I_LON]]).setContent(popupHTML(r)).openOn(map);
+}
+async function downloadIgra(id, btn){
+  const statusEl = document.querySelector(".dl-status");
+  if(btn) btn.disabled = true;
+  if(statusEl) statusEl.textContent = `Fetching full period-of-record data for ${id}...`;
+  const url = `https://www.ncei.noaa.gov/pub/data/igra/data/data-por/${id}-data.txt.zip`;
+  let buf = null;
+  try { const res = await fetch(url); if(res.ok) buf = await res.arrayBuffer(); }
+  catch(e) {}
+  if(!buf){
+    if(statusEl) statusEl.textContent = `Could not fetch IGRA data for ${id}. It may not have a full-record file at NCEI.`;
+    if(btn) btn.disabled = false;
+    return;
+  }
+  const filename = `${id}-data.txt.zip`;
+  const objUrl = URL.createObjectURL(new Blob([buf], {type:"application/zip"}));
+  if(btn){
+    const link = document.createElement("a");
+    link.href = objUrl; link.download = filename; link.className = "dl-btn";
+    link.textContent = `Save ${filename}`;
+    btn.replaceWith(link);
+  }
+  if(statusEl) statusEl.textContent = `Ready: click "Save ${filename}" to write it to disk (this click, not the fetch, is what your browser treats as the actual download).`;
 }
 
 map.on("click", e=>{
